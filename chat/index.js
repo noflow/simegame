@@ -4,6 +4,7 @@ console.log("✅ Loaded chat module from:", import.meta.url);
 const CHAT_OVERLAY_ID = 'chatModal';
 let overlay = null;
 let currentNpcId = null;
+let detachEsc = null; // to remove ESC handler when closing
 
 function ensureModal() {
   if (overlay) return overlay;
@@ -13,8 +14,9 @@ function ensureModal() {
   overlay.className = 'modal-overlay';
   overlay.style.cssText = `
     position:fixed; inset:0; background:rgba(0,0,0,.5);
-    display:none; align-items:center; justify-content:center; z-index:2000;
-    pointer-events:auto;`; // ensure clicks/typing go through
+    display:none; align-items:center; justify-content:center;
+    z-index:3000; pointer-events:auto;`;
+
   overlay.innerHTML = `
     <div id="chatModalCard" class="modal" role="dialog" aria-modal="true" aria-labelledby="chatTitle"
          style="width:min(720px,95vw); background:var(--panel); border:1px solid #1b222b; border-radius:14px; overflow:hidden; pointer-events:auto;">
@@ -36,16 +38,12 @@ function ensureModal() {
 
   document.body.appendChild(overlay);
 
-  // Prevent overlay-click from closing when clicking inside the dialog
   const card = overlay.querySelector('#chatModalCard');
-  card.addEventListener('click', e => e.stopPropagation());
-
-  // Close when clicking the shaded backdrop
-  overlay.addEventListener('click', e => {
+  card.addEventListener('click', e => e.stopPropagation());           // clicks inside don't close
+  overlay.addEventListener('click', e => {                            // click on backdrop closes
     if (e.target && e.target.id === CHAT_OVERLAY_ID) closeChatModal();
   });
 
-  // Wire controls once
   overlay.querySelector('#chatCloseBtn').addEventListener('click', closeChatModal);
   overlay.querySelector('#chatSend').addEventListener('click', sendCurrentMessage);
   const input = overlay.querySelector('#chatInput');
@@ -73,13 +71,11 @@ export function startChat(npcOrId){
   currentNpcId = npc.id;
   const rel = getRelationship(npc.id); // ensure exists + introduced
 
-  // First-time greeting if no history yet
-  if (!rel.history || rel.history.length === 0) {
-    rel.history = [];
-    const greet =
-      npc.greeting ||
-      `Hi, I'm ${npc.name}.` +
-      (npc.role ? ` I'm a ${npc.role.toLowerCase()}.` : '');
+  // Greet if the NPC hasn't spoken yet (covers first time and old stub histories)
+  const npcHasSpoken = Array.isArray(rel.history) && rel.history.some(h => h.speaker === npc.name);
+  if (!npcHasSpoken) {
+    rel.history = Array.isArray(rel.history) ? rel.history : [];
+    const greet = npc.greeting || `Hi, I'm ${npc.name}.` + (npc.role ? ` I'm a ${npc.role.toLowerCase()}.` : '');
     rel.history.push({ speaker: npc.name, text: greet, ts: Date.now() });
     window.GameState?.saveState?.();
   }
@@ -99,11 +95,20 @@ export function startChat(npcOrId){
     }
   }
 
+  // ESC closes while chat is open
+  detachEsc?.(); // remove previous if any
+  const escHandler = (e)=>{ if(e.key === 'Escape') closeChatModal(); };
+  document.addEventListener('keydown', escHandler);
+  detachEsc = ()=> document.removeEventListener('keydown', escHandler);
+
   ov.style.display = 'flex';
   ov.setAttribute('aria-hidden','false');
-  renderChat();
+
+  // make sure input is visible + focused
   const input = ov.querySelector('#chatInput');
-  if (input) { input.disabled = false; input.value = ''; input.focus(); }
+  if (input) { input.disabled = false; input.style.color = 'var(--text)'; input.value = ''; input.focus(); }
+
+  renderChat();
 }
 
 export function closeChatModal(){
@@ -111,6 +116,7 @@ export function closeChatModal(){
   if (!ov) return;
   ov.style.display = 'none';
   ov.setAttribute('aria-hidden','true');
+  detachEsc?.(); // remove ESC handler
 }
 
 export function renderChat(){
@@ -171,3 +177,8 @@ function generateStubReply(npc, text){
   const hint = npc?.persona ? ` (${String(npc.persona).split('.').shift()})` : '';
   return `I hear you: "${text}".${hint ? ' ' + hint : ''}`;
 }
+
+// (optional) expose to window for other modules that might call without importing
+window.GameUI = Object.assign(window.GameUI || {}, {
+  startChat, closeChatModal, renderChat, getRelationship
+});

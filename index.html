@@ -60,7 +60,16 @@
     body.compact .layout{ gap:8px }
     body.contrast{ --panel:#0d1117; --text:#ffffff; --accent:#79c0ff }
 
-    /* Ensure chat modal is fully interactive even if other CSS exists */
+    /* Chat modal must be readable + interactive */
+    #chatModal { z-index: 3000; }
+    #chatModal input#chatInput {
+      background: #0f141a;      /* solid dark input background */
+      color: var(--text);       /* visible text color */
+      caret-color: var(--text);
+  }
+    #chatModal input#chatInput::placeholder { color: var(--muted); }
+
+/* (safety) ensure clicks/typing aren't blocked */
     #chatModal, #chatModal * { pointer-events: auto; }
   </style>
 </head>
