@@ -59,6 +59,9 @@
     body.compact .card .body{ padding:.6rem }
     body.compact .layout{ gap:8px }
     body.contrast{ --panel:#0d1117; --text:#ffffff; --accent:#79c0ff }
+
+    /* Ensure chat modal is fully interactive even if other CSS exists */
+    #chatModal, #chatModal * { pointer-events: auto; }
   </style>
 </head>
 <body>
@@ -201,6 +204,6 @@
   </div>
 
   <link rel="icon" href="data:," />
-  <script type="module" src="./src/main.js?v=16"></script>
+  <script type="module" src="./src/main.js?v=18"></script>
 </body>
 </html>

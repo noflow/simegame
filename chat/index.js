@@ -2,20 +2,23 @@
 console.log("✅ Loaded chat module from:", import.meta.url);
 
 const CHAT_OVERLAY_ID = 'chatModal';
+let overlay = null;
 let currentNpcId = null;
 
 function ensureModal() {
-  let overlay = document.getElementById(CHAT_OVERLAY_ID);
   if (overlay) return overlay;
 
   overlay = document.createElement('div');
   overlay.id = CHAT_OVERLAY_ID;
   overlay.className = 'modal-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:2000';
+  overlay.style.cssText = `
+    position:fixed; inset:0; background:rgba(0,0,0,.5);
+    display:none; align-items:center; justify-content:center; z-index:2000;
+    pointer-events:auto;`; // ensure clicks/typing go through
   overlay.innerHTML = `
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="chatTitle"
-         style="width:min(720px,95vw);background:var(--panel);border:1px solid #1b222b;border-radius:14px;overflow:hidden">
-      <header style="display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;border-bottom:1px solid #1b222b;background:#0f141a">
+    <div id="chatModalCard" class="modal" role="dialog" aria-modal="true" aria-labelledby="chatTitle"
+         style="width:min(720px,95vw); background:var(--panel); border:1px solid #1b222b; border-radius:14px; overflow:hidden; pointer-events:auto;">
+      <header style="display:flex; align-items:center; gap:.6rem; padding:.7rem .9rem; border-bottom:1px solid #1b222b; background:#0f141a">
         <img id="chatAvatar" style="width:28px;height:28px;border-radius:8px;border:1px solid #1b222b;object-fit:cover;display:none"/>
         <h3 id="chatTitle" style="margin:0;font-size:.98rem">Chat</h3>
         <span style="margin-left:auto"></span>
@@ -24,18 +27,31 @@ function ensureModal() {
       </header>
       <div class="body" style="display:flex;flex-direction:column;gap:.6rem;min-height:380px;max-height:70vh">
         <div id="chatMessages" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:.4rem"></div>
-        <div class="row">
-          <input id="chatInput" class="btn-ghost" placeholder="Say something…" style="flex:1"/>
-          <button id="chatSend" class="btn-primary">Send</button>
+        <div class="row" id="chatControls" style="gap:.5rem">
+          <input id="chatInput" class="btn-ghost" placeholder="Say something…" style="flex:1" autocomplete="off" />
+          <button id="chatSend" class="btn-primary" type="button">Send</button>
         </div>
       </div>
     </div>`;
+
   document.body.appendChild(overlay);
 
-  overlay.addEventListener('click', e => { if (e.target.id === CHAT_OVERLAY_ID) closeChatModal(); });
+  // Prevent overlay-click from closing when clicking inside the dialog
+  const card = overlay.querySelector('#chatModalCard');
+  card.addEventListener('click', e => e.stopPropagation());
+
+  // Close when clicking the shaded backdrop
+  overlay.addEventListener('click', e => {
+    if (e.target && e.target.id === CHAT_OVERLAY_ID) closeChatModal();
+  });
+
+  // Wire controls once
   overlay.querySelector('#chatCloseBtn').addEventListener('click', closeChatModal);
   overlay.querySelector('#chatSend').addEventListener('click', sendCurrentMessage);
-  overlay.querySelector('#chatInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendCurrentMessage(); });
+  const input = overlay.querySelector('#chatInput');
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendCurrentMessage(); }
+  });
 
   return overlay;
 }
@@ -55,11 +71,22 @@ export function startChat(npcOrId){
   const npc = typeof npcOrId === 'string' ? getNpcById(npcOrId) : npcOrId;
   if (!npc){ alert('Load characters.json first.'); return; }
   currentNpcId = npc.id;
-  getRelationship(npc.id); // ensure exists + introduced
+  const rel = getRelationship(npc.id); // ensure exists + introduced
 
-  const overlay = ensureModal();
-  const title = overlay.querySelector('#chatTitle');
-  const avatar = overlay.querySelector('#chatAvatar');
+  // First-time greeting if no history yet
+  if (!rel.history || rel.history.length === 0) {
+    rel.history = [];
+    const greet =
+      npc.greeting ||
+      `Hi, I'm ${npc.name}.` +
+      (npc.role ? ` I'm a ${npc.role.toLowerCase()}.` : '');
+    rel.history.push({ speaker: npc.name, text: greet, ts: Date.now() });
+    window.GameState?.saveState?.();
+  }
+
+  const ov = ensureModal();
+  const title = ov.querySelector('#chatTitle');
+  const avatar = ov.querySelector('#chatAvatar');
 
   if (title) title.textContent = npc.name;
   if (avatar) {
@@ -72,32 +99,31 @@ export function startChat(npcOrId){
     }
   }
 
-  overlay.style.display = 'flex';
-  overlay.setAttribute('aria-hidden','false');
+  ov.style.display = 'flex';
+  ov.setAttribute('aria-hidden','false');
   renderChat();
-  const input = overlay.querySelector('#chatInput'); if (input) input.focus();
+  const input = ov.querySelector('#chatInput');
+  if (input) { input.disabled = false; input.value = ''; input.focus(); }
 }
 
 export function closeChatModal(){
-  const overlay = document.getElementById(CHAT_OVERLAY_ID);
-  if (!overlay) return;
-  overlay.style.display = 'none';
-  overlay.setAttribute('aria-hidden','true');
+  const ov = document.getElementById(CHAT_OVERLAY_ID);
+  if (!ov) return;
+  ov.style.display = 'none';
+  ov.setAttribute('aria-hidden','true');
 }
 
 export function renderChat(){
-  const overlay = ensureModal();
-  const box = overlay.querySelector('#chatMessages');
+  const ov = ensureModal();
+  const box = ov.querySelector('#chatMessages');
   if (!box) return;
   box.innerHTML = '';
 
-  if (!currentNpcId){
+  const rel = currentNpcId ? getRelationship(currentNpcId) : null;
+  if (!rel) {
     box.innerHTML = '<div class="small">Pick someone to chat with.</div>';
     return;
   }
-
-  const npc = getNpcById(currentNpcId);
-  const rel = getRelationship(currentNpcId);
 
   (rel.history || []).forEach(h=>{
     const wrap = document.createElement('div');
@@ -120,8 +146,8 @@ export function renderChat(){
 }
 
 function sendCurrentMessage(){
-  const overlay = ensureModal();
-  const input = overlay.querySelector('#chatInput');
+  const ov = ensureModal();
+  const input = ov.querySelector('#chatInput');
   if (!input) return;
   const text = String(input.value || '').trim();
   if (!text) return;
@@ -132,7 +158,7 @@ function sendCurrentMessage(){
   const rel = getRelationship(currentNpcId);
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  // Placeholder NPC reply (swap for your AI call as needed)
+  // Placeholder NPC reply (replace with your AI call)
   const reply = generateStubReply(npc, text);
   rel.history.push({ speaker:npc.name, text: reply, ts: Date.now() });
 
