@@ -9,7 +9,7 @@ import { renderLocation, goTo } from '../render/map.js';
 import { renderSidebar, renderInventory, renderMoney } from '../render/sidebar.js';
 
 import * as GameUI from '../chat/index.js';
-import * as Known from '../known/index.js';   // folder name is lowercase "known"
+import * as Known from '../known/index.js';
 import * as Debug from '../debug.js';
 
 // Surface unexpected JS errors during dev
