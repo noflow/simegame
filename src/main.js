@@ -5,11 +5,11 @@ import * as GameStorage from '../storage.js';
 import { setGameData, loadInlineJson } from '../data.js';
 import * as GameLogic from '../presence.js';
 
-import { renderLocation, goTo } from './render/map.js';
-import { renderSidebar, renderInventory, renderMoney } from './render/sidebar.js';
+import { renderLocation, goTo } from './src/render/map.js';
+import { renderSidebar, renderInventory, renderMoney } from './src/render/sidebar.js';
 
 import * as GameUI from './chat/index.js';
-import * as Known from './known/index.js';
+import * as Known from './src/known/index.js';
 import * as Debug from '../debug.js';
 
 // Surface unexpected JS errors during dev
