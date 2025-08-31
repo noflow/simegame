@@ -1,4 +1,5 @@
 // /chat/index.js
+console.log("✅ Loaded chat module from:", import.meta.url);
 
 const CHAT_OVERLAY_ID = 'chatModal';
 let currentNpcId = null;
@@ -131,7 +132,7 @@ function sendCurrentMessage(){
   const rel = getRelationship(currentNpcId);
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  // Placeholder NPC reply (replace with your AI call if desired)
+  // Placeholder NPC reply (swap for your AI call as needed)
   const reply = generateStubReply(npc, text);
   rel.history.push({ speaker:npc.name, text: reply, ts: Date.now() });
 
