@@ -1,5 +1,5 @@
 // render/sidebar.js
-import { state } from '../src/state.js';
+import { state } from '../state.js';
 
 export function renderSidebar(){
   const sd = document.getElementById('sidebarDay'); if(sd) sd.textContent = state.day;

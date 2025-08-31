@@ -24,4 +24,3 @@ export function loadInlineJson(){
   CHARACTERS = JSON.parse(cd.textContent || "{}");
   return { WORLD, CHARACTERS };
 }
-
