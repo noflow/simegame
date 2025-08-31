@@ -1,14 +1,16 @@
 // src/main.js
-import * as GameConst from './constants.js';
-import * as GameState from './state.js';
-import * as GameStorage from './storage.js';
-import { setGameData, loadInlineJson } from './data.js';
-import * as GameLogic from './presence.js';
+import * as GameConst from '../constants.js';
+import * as GameState from '../state.js';
+import * as GameStorage from '../storage.js';
+import { setGameData, loadInlineJson } from '../data.js';
+import * as GameLogic from '../presence.js';
+
 import { renderLocation, goTo } from '../render/map.js';
 import { renderSidebar, renderInventory, renderMoney } from '../render/sidebar.js';
-import * as GameUI from '../chat/index.js';   // <-- make sure you add this folder + stub
-import * as Known from '../Known/index.js';   // <-- fixed casing + path
-import * as Debug from './debug.js';
+
+import * as GameUI from '../chat/index.js';
+import * as Known from '../known/index.js';   // folder name is lowercase "known"
+import * as Debug from '../debug.js';
 
 // Surface unexpected JS errors during dev
 window.addEventListener('error', e => { console.error('🔥 Script error:', e.message, e.filename+':'+e.lineno); });
