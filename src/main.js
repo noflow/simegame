@@ -2,7 +2,7 @@
 import * as GameConst from './constants.js';
 import * as GameState from './state.js';
 import * as GameStorage from './storage.js';
-import { setGameData, loadInlineJson } from '../data.js';   // data.js is at the root
+import { setGameData, loadInlineJson } from './data.js';   // now in /src
 import * as GameLogic from './presence.js';
 
 import { renderLocation, goTo } from './render/map.js';
