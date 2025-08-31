@@ -12,6 +12,9 @@ import * as GameUI from '../chat/index.js';       // chat at repo root
 import * as Known from './known/index.js';
 import * as Debug from './debug.js';
 
+// ensure global container exists even before JSON is loaded
+window.GameData = window.GameData || { WORLD: null, CHARACTERS: null };
+
 // ---- guard against double boot
 if (window.__GAME_BOOTED__) {
   console.warn("Game already booted — duplicate load prevented.", import.meta.url);
