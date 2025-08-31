@@ -2,7 +2,7 @@
 import { state } from './state.js';
 import { renderLocation } from './render/map.js';
 import { updatePresence } from './presence.js';
-import { renderChat } from './chat/index.js';
+import { renderChat } from '../chat/index.js';      // chat is at REPO ROOT/chat/index.js
 import { renderSidebar } from './render/sidebar.js';
 
 export let WORLD = null;
