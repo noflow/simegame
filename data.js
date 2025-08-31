@@ -1,7 +1,7 @@
 // data.js
-import { state } from './state.js';
+import { state } from './scr/state.js';
 import { renderLocation } from './src/render/map.js';
-import { updatePresence } from './presence.js';
+import { updatePresence } from './scr/presence.js';
 import { renderChat } from './chat/index.js';
 import { renderSidebar } from './src/render/sidebar.js';
 
