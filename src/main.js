@@ -12,14 +12,14 @@ import * as GameUI from '../chat/index.js';       // chat at repo root
 import * as Known from './known/index.js';
 import * as Debug from './debug.js';
 
-// ---- cache guards (optional)
+// ---- guard against double boot
 if (window.__GAME_BOOTED__) {
   console.warn("Game already booted — duplicate load prevented.", import.meta.url);
 } else {
   window.__GAME_BOOTED__ = true;
 }
 
-// ---- overrides in localStorage
+// ---- localStorage keys for user JSON
 const WORLD_KEY = 'world_json_override_v1';
 const CHARS_KEY = 'characters_json_override_v1';
 
@@ -68,38 +68,39 @@ window.GameNav = { goTo };
 function advanceTime(){
   const TIME_SLOTS = GameConst.TIME_SLOTS;
   GameState.state.timeIndex++;
-  if(GameState.state.timeIndex >= TIME_SLOTS.length){
-    GameState.state.timeIndex=0; GameState.state.day++; if(GameState.state.day>7) GameState.state.day=1;
+  if (GameState.state.timeIndex >= TIME_SLOTS.length) {
+    GameState.state.timeIndex = 0;
+    GameState.state.day++;
+    if (GameState.state.day > 7) GameState.state.day = 1;
   }
-// in boot(), replace the two lines that assign via ?.textContent
-{
-  const el = document.getElementById('day');
-  if (el) el.textContent = GameState.state.day;
-}
-{
-  const el = document.getElementById('time');
-  if (el) el.textContent = GameConst.TIME_SLOTS[GameState.state.timeIndex];
-}
+  { const d = document.getElementById('day');  if (d) d.textContent  = GameState.state.day; }
+  { const t = document.getElementById('time'); if (t) t.textContent = TIME_SLOTS[GameState.state.timeIndex]; }
   renderSidebar();
-  // Only update presence if world loaded
-  if (window.GameData?.WORLD && window.GameData?.CHARACTERS) {
+  if (window.GameData && window.GameData.WORLD && window.GameData.CHARACTERS) {
     GameLogic.updatePresence();
   }
   GameState.saveState();
 }
 
 function applyMoney(delta){
-  GameState.state.money += delta; renderMoney(); renderSidebar(); GameState.saveState();
+  GameState.state.money += delta;
+  renderMoney();
+  renderSidebar();
+  GameState.saveState();
 }
 
 async function boot(){
   try{
     // basic UI init
-    GameState.loadState(); GameStorage.loadApiKey(); renderMoney(); renderInventory(); renderSidebar();
-    document.getElementById('day')?.textContent = GameState.state.day;
-    document.getElementById('time')?.textContent = GameConst.TIME_SLOTS[GameState.state.timeIndex];
+    GameState.loadState();
+    GameStorage.loadApiKey();
+    renderMoney();
+    renderInventory();
+    renderSidebar();
+    { const el = document.getElementById('day');  if (el) el.textContent  = GameState.state.day; }
+    { const el = document.getElementById('time'); if (el) el.textContent = GameConst.TIME_SLOTS[GameState.state.timeIndex]; }
 
-    // Try to load overrides (required now)
+    // Load user overrides (required now; no built-in JSON)
     let worldObj = null, charsObj = null;
     try {
       const wStr = localStorage.getItem(WORLD_KEY);
@@ -112,18 +113,17 @@ async function boot(){
       localStorage.removeItem(CHARS_KEY);
     }
 
-    // If both are present, start the game
+    // If both present, start; otherwise prompt user to load files
     if (worldObj && charsObj) {
       window.GameData = { WORLD: worldObj, CHARACTERS: charsObj };
       setGameData(worldObj, charsObj);
     } else {
-      // Otherwise, prompt user to load files
       window.GameData = { WORLD: null, CHARACTERS: null };
       openSettingsModal();
     }
-  }catch(err){
+  } catch (err) {
     console.error(err);
-    alert("Error: " + (err.message||String(err)));
+    alert("Error: " + (err.message || String(err)));
   }
 }
 
@@ -131,32 +131,44 @@ addEventListener('DOMContentLoaded', ()=>{
   boot();
 
   // header buttons
-  document.getElementById('advance')?.addEventListener('click', advanceTime);
+  { const el = document.getElementById('advance'); if (el) el.addEventListener('click', advanceTime); }
 
   // settings open/close
-  document.getElementById('openSettings')?.addEventListener('click', openSettingsModal);
-  document.getElementById('openSettings2')?.addEventListener('click', openSettingsModal);
-  document.getElementById('settingsCloseBtn')?.addEventListener('click', closeSettingsModal);
-  document.getElementById('settingsModal')?.addEventListener('click', (e)=>{ if(e.target.id==='settingsModal'){ closeSettingsModal(); }});
+  { const el = document.getElementById('openSettings');  if (el) el.addEventListener('click', openSettingsModal); }
+  { const el = document.getElementById('openSettings2'); if (el) el.addEventListener('click', openSettingsModal); }
+  { const el = document.getElementById('settingsCloseBtn'); if (el) el.addEventListener('click', closeSettingsModal); }
+  document.getElementById('settingsModal')?.addEventListener('click', (e)=>{
+    if (e.target && e.target.id === 'settingsModal') closeSettingsModal();
+  });
 
   // Known Characters modal wiring
-  document.getElementById('openKnown')?.addEventListener('click', Known.openKnownModal);
-  document.getElementById('knownCloseBtn')?.addEventListener('click', Known.closeKnownModal);
-  document.getElementById('knownModal')?.addEventListener('click', (e)=>{ if(e.target.id==='knownModal'){ Known.closeKnownModal(); }});
+  { const el = document.getElementById('openKnown');      if (el) el.addEventListener('click', Known.openKnownModal); }
+  { const el = document.getElementById('knownCloseBtn');  if (el) el.addEventListener('click', Known.closeKnownModal); }
+  document.getElementById('knownModal')?.addEventListener('click', (e)=>{
+    if (e.target && e.target.id === 'knownModal') Known.closeKnownModal();
+  });
   document.getElementById('knownSearch')?.addEventListener('input', Known.renderKnownList);
 
   // Inventory & money
   document.getElementById('addItem')?.addEventListener('click', ()=>{
-    const v = document.getElementById('newItem').value.trim(); if(!v) return;
-    GameState.state.inventory.push(v); document.getElementById('newItem').value=''; renderInventory(); GameState.saveState();
+    const input = document.getElementById('newItem');
+    const v = input ? input.value.trim() : '';
+    if (!v) return;
+    GameState.state.inventory.push(v);
+    if (input) input.value = '';
+    renderInventory();
+    GameState.saveState();
   });
+
   document.getElementById('applyMoney')?.addEventListener('click', ()=>{
-    const n=parseInt(document.getElementById('moneyDelta').value,10); if(!isNaN(n)) applyMoney(n);
+    const el = document.getElementById('moneyDelta');
+    const n = el ? parseInt(el.value, 10) : NaN;
+    if (!isNaN(n)) applyMoney(n);
   });
 
   // ---- Settings: JSON imports & game actions
   document.getElementById('mapFile')?.addEventListener('change', async (e) => {
-    const f = e.target.files?.[0];
+    const f = e.target && e.target.files ? e.target.files[0] : null;
     if (!f) return;
     try {
       const text = await readFileAsText(f);
@@ -177,7 +189,7 @@ addEventListener('DOMContentLoaded', ()=>{
   });
 
   document.getElementById('charsFile')?.addEventListener('change', async (e) => {
-    const f = e.target.files?.[0];
+    const f = e.target && e.target.files ? e.target.files[0] : null;
     if (!f) return;
     try {
       const text = await readFileAsText(f);
@@ -198,7 +210,6 @@ addEventListener('DOMContentLoaded', ()=>{
   });
 
   document.getElementById('clearOverrides')?.addEventListener('click', () => {
-    // kept disabled since there is no built-in now
     alert('Built-in data removed in this build. Load map.json and characters.json from Settings to play.');
   });
 
@@ -226,18 +237,17 @@ addEventListener('DOMContentLoaded', ()=>{
   if (compactEl) compactEl.checked = !!GameState.state.settings.compact;
   if (contrastEl) contrastEl.checked = !!GameState.state.settings.contrast;
   compactEl?.addEventListener('change', ()=>{
-    GameState.state.settings.compact = compactEl.checked; applySettings(); GameState.saveState();
+    GameState.state.settings.compact = !!compactEl.checked;
+    applySettings(); GameState.saveState();
   });
   contrastEl?.addEventListener('change', ()=>{
-    GameState.state.settings.contrast = contrastEl.checked; applySettings(); GameState.saveState();
+    GameState.state.settings.contrast = !!contrastEl.checked;
+    applySettings(); GameState.saveState();
   });
   applySettings();
 
-  // when opening settings, update status labels
+  // update status badges when opening settings
   document.getElementById('openSettings')?.addEventListener('click', setStatusBadges);
   document.getElementById('openSettings2')?.addEventListener('click', setStatusBadges);
   setStatusBadges();
 });
-
-// optional: expose navigation
-window.GameNav = { goTo };
