@@ -1,9 +1,9 @@
 // /src/data.js
-import { state } from './state.js';
-import { renderLocation } from './render/map.js';
-import { updatePresence } from './presence.js';
-import { renderChat } from '../chat/index.js';      // chat is at REPO ROOT/chat/index.js
-import { renderSidebar } from './render/sidebar.js';
+import { state } from './state.js?v=2';
+import { renderLocation } from './render/map.js?v=2';
+import { updatePresence } from './presence.js?v=2';
+import { renderChat } from '../chat/index.js?v=2';
+import { renderSidebar } from './render/sidebar.js?v=2';
 
 export let WORLD = null;
 export let CHARACTERS = null;
