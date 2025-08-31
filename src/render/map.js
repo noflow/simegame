@@ -1,6 +1,6 @@
 // render/map.js
-import { state, saveState } from '../src/state.js';
-import { WORLD } from '../src/data.js';
+import { state, saveState } from '../state.js';
+import { WORLD } from '../data.js';
 
 export function renderLocation(){
   const el = document.getElementById('locationDesc');
