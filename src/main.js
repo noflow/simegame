@@ -71,12 +71,15 @@ function advanceTime(){
   if(GameState.state.timeIndex >= TIME_SLOTS.length){
     GameState.state.timeIndex=0; GameState.state.day++; if(GameState.state.day>7) GameState.state.day=1;
   }
-function setText(id, value){
-  const el = document.getElementById(id);
-  if (el) el.textContent = value;
+// in boot(), replace the two lines that assign via ?.textContent
+{
+  const el = document.getElementById('day');
+  if (el) el.textContent = GameState.state.day;
 }
-setText('day', GameState.state.day);
-setText('time', GameConst.TIME_SLOTS[GameState.state.timeIndex]);
+{
+  const el = document.getElementById('time');
+  if (el) el.textContent = GameConst.TIME_SLOTS[GameState.state.timeIndex];
+}
   renderSidebar();
   // Only update presence if world loaded
   if (window.GameData?.WORLD && window.GameData?.CHARACTERS) {
