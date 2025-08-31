@@ -1,10 +1,10 @@
 // src/data.js
 // data.js
 import { state } from './state.js';
-import { renderLocation } from './render/map.js';
+import { renderLocation } from './src/render/map.js';
 import { updatePresence } from './presence.js';
-import { renderChat } from './chat/index.js';
-import { renderSidebar } from './render/sidebar.js';
+import { renderChat } from './src/chat/index.js';
+import { renderSidebar } from './src/render/sidebar.js';
 
 export let WORLD = null;
 export let CHARACTERS = null;
