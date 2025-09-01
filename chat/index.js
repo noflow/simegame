@@ -5,25 +5,7 @@ const CHAT_OVERLAY_ID = 'chatModal';
 let overlay = null;
 let currentNpcId = null;
 let detachEsc = null; // to remove ESC handler when closing
-
-// --- global fallback: captures Enter even if something swallows it
-let __enterFallbackBound = false;
-function bindGlobalEnterFallback() {
-  if (__enterFallbackBound) return;
-  __enterFallbackBound = true;
-  document.addEventListener('keydown', (e) => {
-    const ov = document.getElementById(CHAT_OVERLAY_ID);
-    if (!ov || ov.getAttribute('aria-hidden') === 'true') return;
-    const t = document.activeElement;
-    if (!t || t.id !== 'chatInput') return;
-    const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.key === 'NumpadEnter';
-    if (isEnter && !e.shiftKey && !e.isComposing) {
-      e.preventDefault();
-      try { sendCurrentMessage(); } catch {}
-    }
-  }, true);
-}
-bindGlobalEnterFallback();
+let lastSubmitAt = 0; // debounce to prevent double-send
 
 function ensureModal() {
   if (overlay) return overlay;
@@ -48,6 +30,7 @@ function ensureModal() {
       </header>
       <div class="body" style="display:flex;flex-direction:column;gap:.6rem;min-height:380px;max-height:70vh">
         <div id="chatMessages" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:.4rem"></div>
+        <!-- ✅ form-based controls: Enter submits, no extra keydown listeners -->
         <form class="row" id="chatForm" style="gap:.5rem">
           <input id="chatInput" class="btn-ghost" placeholder="Say something…" style="flex:1" autocomplete="off" />
           <button id="chatSend" class="btn-primary" type="submit">Send</button>
@@ -58,29 +41,26 @@ function ensureModal() {
   document.body.appendChild(overlay);
 
   const card = overlay.querySelector('#chatModalCard');
-  card.addEventListener('click', e => e.stopPropagation());
-  overlay.addEventListener('click', e => {
+  card.addEventListener('click', e => e.stopPropagation());           // clicks inside don't close
+  overlay.addEventListener('click', e => {                            // click on backdrop closes
     if (e.target && e.target.id === CHAT_OVERLAY_ID) closeChatModal();
   });
 
   overlay.querySelector('#chatCloseBtn').addEventListener('click', closeChatModal);
 
-  // form submit handles Enter automatically
+  // ✅ single submit path (prevents double triggers)
   const form = overlay.querySelector('#chatForm');
   form.onsubmit = (e) => {
     e.preventDefault();
+    // small debounce: ignore if another submit happened < 250ms ago
+    const now = Date.now();
+    if (now - lastSubmitAt < 250) return;
+    lastSubmitAt = now;
     sendCurrentMessage();
   };
 
-  // explicit keydown handler for reliability (covers numpad enter, IME quirks)
-  const input = overlay.querySelector('#chatInput');
-  input.onkeydown = (e) => {
-    const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.key === 'NumpadEnter';
-    if (isEnter && !e.shiftKey && !e.isComposing) {
-      e.preventDefault();
-      sendCurrentMessage();
-    }
-  };
+  // ❌ no input.onkeydown here
+  // ❌ no extra click listener on #chatSend (submit already handles it)
 
   return overlay;
 }
@@ -100,8 +80,9 @@ export function startChat(npcOrId){
   const npc = typeof npcOrId === 'string' ? getNpcById(npcOrId) : npcOrId;
   if (!npc){ alert('Load characters.json first.'); return; }
   currentNpcId = npc.id;
-  const rel = getRelationship(npc.id);
+  const rel = getRelationship(npc.id); // ensure exists + introduced
 
+  // Greet if the NPC hasn't spoken yet (covers first time and old stub histories)
   const npcHasSpoken = Array.isArray(rel.history) && rel.history.some(h => h.speaker === npc.name);
   if (!npcHasSpoken) {
     rel.history = Array.isArray(rel.history) ? rel.history : [];
@@ -113,6 +94,7 @@ export function startChat(npcOrId){
   const ov = ensureModal();
   const title = ov.querySelector('#chatTitle');
   const avatar = ov.querySelector('#chatAvatar');
+
   if (title) title.textContent = npc.name;
   if (avatar) {
     if (npc.avatar) {
@@ -124,7 +106,8 @@ export function startChat(npcOrId){
     }
   }
 
-  detachEsc?.();
+  // ESC closes while chat is open
+  detachEsc?.(); // remove previous if any
   const escHandler = (e)=>{ if(e.key === 'Escape') closeChatModal(); };
   document.addEventListener('keydown', escHandler);
   detachEsc = ()=> document.removeEventListener('keydown', escHandler);
@@ -132,6 +115,7 @@ export function startChat(npcOrId){
   ov.style.display = 'flex';
   ov.setAttribute('aria-hidden','false');
 
+  // make sure input is visible + focused
   const input = ov.querySelector('#chatInput');
   if (input) { input.disabled = false; input.style.color = 'var(--text)'; input.value = ''; input.focus(); }
 
@@ -143,7 +127,7 @@ export function closeChatModal(){
   if (!ov) return;
   ov.style.display = 'none';
   ov.setAttribute('aria-hidden','true');
-  detachEsc?.();
+  detachEsc?.(); // remove ESC handler
 }
 
 export function renderChat(){
@@ -189,8 +173,10 @@ async function sendCurrentMessage(){
   if (!npc) return;
 
   const rel = getRelationship(currentNpcId);
+  // Push user line immediately (no delay)
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
+  // build compact context from last ~20 turns
   const history = Array.isArray(rel.history) ? rel.history.slice(-20) : [];
   const messages = [
     {
