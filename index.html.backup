@@ -213,7 +213,6 @@
   </div>
 <link rel="icon" href="data:," />
 <script src="./src/cosmos.js"></script>
-<script src="./src/cosmos.js"></script>
-  <script type="module" src="./src/main.js?v=20"></script> <!-- bump v to clear cache -->
+<script type="module" src="./src/main.js?v=19"></script> <!-- bump v to clear cache -->
 </body>
 </html>

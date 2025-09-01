@@ -198,26 +198,7 @@ async function boot(){
 addEventListener('DOMContentLoaded', ()=>{
   boot();
 
-  
-  
-// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
-(function bridgeCosmosKey(){
-  try {
-    const k1 = localStorage.getItem('llm_api_key');
-    const k2 = localStorage.getItem('cosmos.apiKey');
-    if (k1 && !k2) localStorage.setItem('cosmos.apiKey', k1);
-    if (k2 && !k1) localStorage.setItem('llm_api_key', k2);
-    const apiKeyInput = document.getElementById('apiKey');
-    if (apiKeyInput) {
-      apiKeyInput.addEventListener('change', () => {
-        const v = apiKeyInput.value.trim();
-        localStorage.setItem('llm_api_key', v);
-        localStorage.setItem('cosmos.apiKey', v);
-      });
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
-// header buttons
+  // header buttons
   { const el = document.getElementById('advance'); if (el) el.addEventListener('click', advanceTime); }
 
   // settings open/close
