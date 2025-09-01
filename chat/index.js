@@ -1,11 +1,29 @@
 // /chat/index.js
-
 console.log("✅ Loaded chat module from:", import.meta.url);
 
 const CHAT_OVERLAY_ID = 'chatModal';
 let overlay = null;
 let currentNpcId = null;
 let detachEsc = null; // to remove ESC handler when closing
+
+// --- global fallback: captures Enter even if something swallows it
+let __enterFallbackBound = false;
+function bindGlobalEnterFallback() {
+  if (__enterFallbackBound) return;
+  __enterFallbackBound = true;
+  document.addEventListener('keydown', (e) => {
+    const ov = document.getElementById(CHAT_OVERLAY_ID);
+    if (!ov || ov.getAttribute('aria-hidden') === 'true') return;
+    const t = document.activeElement;
+    if (!t || t.id !== 'chatInput') return;
+    const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.key === 'NumpadEnter';
+    if (isEnter && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      try { sendCurrentMessage(); } catch {}
+    }
+  }, true);
+}
+bindGlobalEnterFallback();
 
 function ensureModal() {
   if (overlay) return overlay;
@@ -40,28 +58,29 @@ function ensureModal() {
   document.body.appendChild(overlay);
 
   const card = overlay.querySelector('#chatModalCard');
-  card.addEventListener('click', e => e.stopPropagation());           // clicks inside don't close
-  overlay.addEventListener('click', e => {                            // click on backdrop closes
+  card.addEventListener('click', e => e.stopPropagation());
+  overlay.addEventListener('click', e => {
     if (e.target && e.target.id === CHAT_OVERLAY_ID) closeChatModal();
   });
 
   overlay.querySelector('#chatCloseBtn').addEventListener('click', closeChatModal);
 
-  // form-based handler
+  // form submit handles Enter automatically
   const form = overlay.querySelector('#chatForm');
-  form.addEventListener('submit', e => {
+  form.onsubmit = (e) => {
     e.preventDefault();
     sendCurrentMessage();
-  });
+  };
 
-  // also allow Enter-to-send, Shift+Enter newline
+  // explicit keydown handler for reliability (covers numpad enter, IME quirks)
   const input = overlay.querySelector('#chatInput');
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  input.onkeydown = (e) => {
+    const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.key === 'NumpadEnter';
+    if (isEnter && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
       sendCurrentMessage();
     }
-  });
+  };
 
   return overlay;
 }
@@ -81,9 +100,8 @@ export function startChat(npcOrId){
   const npc = typeof npcOrId === 'string' ? getNpcById(npcOrId) : npcOrId;
   if (!npc){ alert('Load characters.json first.'); return; }
   currentNpcId = npc.id;
-  const rel = getRelationship(npc.id); // ensure exists + introduced
+  const rel = getRelationship(npc.id);
 
-  // Greet if the NPC hasn't spoken yet
   const npcHasSpoken = Array.isArray(rel.history) && rel.history.some(h => h.speaker === npc.name);
   if (!npcHasSpoken) {
     rel.history = Array.isArray(rel.history) ? rel.history : [];
@@ -95,7 +113,6 @@ export function startChat(npcOrId){
   const ov = ensureModal();
   const title = ov.querySelector('#chatTitle');
   const avatar = ov.querySelector('#chatAvatar');
-
   if (title) title.textContent = npc.name;
   if (avatar) {
     if (npc.avatar) {
@@ -107,7 +124,6 @@ export function startChat(npcOrId){
     }
   }
 
-  // ESC closes while chat is open
   detachEsc?.();
   const escHandler = (e)=>{ if(e.key === 'Escape') closeChatModal(); };
   document.addEventListener('keydown', escHandler);
@@ -209,7 +225,6 @@ async function sendCurrentMessage(){
   renderChat();
 }
 
-// (optional) expose to window
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
 });
