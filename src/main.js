@@ -11,6 +11,7 @@ import { renderSidebar, renderInventory, renderMoney } from './render/sidebar.js
 import * as GameUI from '../chat/index.js?v=3';
 import * as Known from './known/index.js';
 import * as Debug from './debug.js';
+import * as CharBuild from './builder/character_builder.js';
 
 // ensure global container exists even before JSON is loaded
 window.GameData = window.GameData || { WORLD: null, CHARACTERS: null };
@@ -67,6 +68,7 @@ window.GameUI = { ...GameUI, renderChat: GameUI.renderChat, renderSidebar };
 window.GameKnown = Known;
 window.GameDebug = Debug;
 window.GameNav = { goTo };
+window.setGameData = setGameData;
 
 // ===== CosmosRP wiring (non-breaking) =====
 /**
@@ -337,4 +339,15 @@ addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('openSettings')?.addEventListener('click', setStatusBadges);
   document.getElementById('openSettings2')?.addEventListener('click', setStatusBadges);
   setStatusBadges();
+
+  // --- Character Builder wiring ---
+  { const el = document.getElementById('openCharBuilder');  if (el) el.addEventListener('click', CharBuild.openCharacterBuilder); }
+  { const el = document.getElementById('charBuildCloseBtn'); if (el) el.addEventListener('click', CharBuild.closeCharacterBuilder); }
+  { const el = document.getElementById('charBuildCancel'); if (el) el.addEventListener('click', CharBuild.closeCharacterBuilder); }
+  document.getElementById('charBuildModal')?.addEventListener('click', (e)=>{
+    if (e.target && e.target.id === 'charBuildModal') CharBuild.closeCharacterBuilder();
+  });
+  { const el = document.getElementById('charBuildGenerate'); if (el) el.addEventListener('click', CharBuild.generateCharacterFromPrompt); }
+  { const el = document.getElementById('charBuildSave');      if (el) el.addEventListener('click', CharBuild.addCharacterToGame); }
+
 });
