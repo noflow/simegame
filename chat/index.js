@@ -154,6 +154,7 @@ export function renderChat(){
   box.scrollTop = box.scrollHeight;
 }
 
+// replace the whole function:
 async function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
@@ -167,13 +168,33 @@ async function sendCurrentMessage(){
   const rel = getRelationship(currentNpcId);
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
+  // Build compact chat history context (last ~20 turns)
+  const history = Array.isArray(rel.history) ? rel.history.slice(-20) : [];
+  const messages = [
+    {
+      role: 'system',
+      content: `You are roleplaying as ${npc.name}${npc.role ? ', ' + npc.role : ''}. ` +
+               `Persona: ${npc.persona || 'neutral'}. Stay in-character, natural, and concise.`
+    },
+    ...history.map(h => h?.speaker === 'You'
+      ? { role: 'user', content: h.text }
+      : { role: 'assistant', content: h.text }
+    )
+  ];
+
   try {
-    // 🔗 CosmosRP call
-    const reply = await chatWithNpc(npc, text);
-    rel.history.push({ speaker: npc.name, text: reply, ts: Date.now() });
+    if (!window.CosmosRP || !window.CosmosRP.callChat) {
+      throw new Error('CosmosRP client not loaded — ensure <script src="cosmos.js"></script> is in index.html.');
+    }
+    const { content } = await window.CosmosRP.callChat({
+      messages,
+      temperature: 0.7,
+      max_tokens: 512
+    });
+    rel.history.push({ speaker: npc.name, text: content || '…', ts: Date.now() });
   } catch (err) {
-    console.error("LLM error:", err);
-    rel.history.push({ speaker: npc.name, text: "[Error getting reply.]", ts: Date.now() });
+    console.error('LLM error:', err);
+    rel.history.push({ speaker: npc.name, text: '[Error getting reply. Check Cosmos settings.]', ts: Date.now() });
   }
 
   window.GameState?.saveState?.();
@@ -181,10 +202,8 @@ async function sendCurrentMessage(){
   renderChat();
 }
 
-function generateStubReply(npc, text){
-  const hint = npc?.persona ? ` (${String(npc.persona).split('.').shift()})` : '';
-  return `I hear you: "${text}".${hint ? ' ' + hint : ''}`;
-}
+// remove the old generateStubReply(...) entirely
+
 
 // (optional) expose to window for other modules that might call without importing
 window.GameUI = Object.assign(window.GameUI || {}, {
