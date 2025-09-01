@@ -1,7 +1,10 @@
 // /chat/index.js
+import { chatWithNpc } from '../src/cosmos.js';
+
 console.log("✅ Loaded chat module from:", import.meta.url);
 
 const CHAT_OVERLAY_ID = 'chatModal';
+
 let overlay = null;
 let currentNpcId = null;
 let detachEsc = null; // to remove ESC handler when closing
@@ -151,7 +154,7 @@ export function renderChat(){
   box.scrollTop = box.scrollHeight;
 }
 
-function sendCurrentMessage(){
+async function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
   if (!input) return;
@@ -164,9 +167,14 @@ function sendCurrentMessage(){
   const rel = getRelationship(currentNpcId);
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  // Placeholder NPC reply (replace with your AI call)
-  const reply = generateStubReply(npc, text);
-  rel.history.push({ speaker:npc.name, text: reply, ts: Date.now() });
+  try {
+    // 🔗 CosmosRP call
+    const reply = await chatWithNpc(npc, text);
+    rel.history.push({ speaker: npc.name, text: reply, ts: Date.now() });
+  } catch (err) {
+    console.error("LLM error:", err);
+    rel.history.push({ speaker: npc.name, text: "[Error getting reply.]", ts: Date.now() });
+  }
 
   window.GameState?.saveState?.();
   input.value = '';

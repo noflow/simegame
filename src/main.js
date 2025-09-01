@@ -8,7 +8,7 @@ import * as GameLogic from './presence.js';
 import { renderLocation, goTo } from './render/map.js';
 import { renderSidebar, renderInventory, renderMoney } from './render/sidebar.js';
 
-import * as GameUI from '../chat/index.js';       // chat at repo root
+import * as GameUI from '../chat/index.js?v=3';
 import * as Known from './known/index.js';
 import * as Debug from './debug.js';
 
@@ -67,6 +67,71 @@ window.GameUI = { ...GameUI, renderChat: GameUI.renderChat, renderSidebar };
 window.GameKnown = Known;
 window.GameDebug = Debug;
 window.GameNav = { goTo };
+
+// ===== CosmosRP wiring (non-breaking) =====
+/**
+ * Build OpenAI-style messages from our chat history.
+ * history: [{speaker:"You"|"NPC Name", text:"..."}]
+ */
+function buildMessagesFromHistory(history, systemPrompt = "") {
+  const msgs = [];
+  if (systemPrompt) msgs.push({ role: "system", content: systemPrompt });
+  if (Array.isArray(history)) {
+    for (const turn of history) {
+      if (!turn || !turn.text) continue;
+      if (/^you$/i.test(turn.speaker || "")) {
+        msgs.push({ role: "user", content: turn.text });
+      } else {
+        msgs.push({ role: "assistant", content: turn.text });
+      }
+    }
+  }
+  return msgs;
+}
+
+async function llmReplyWithCosmos(history, userText, options = {}) {
+  if (!window.CosmosRP || !window.CosmosRP.callChat) {
+    throw new Error("CosmosRP client not loaded. Ensure cosmos.js is included.");
+  }
+  const systemPrompt = window.GameState?.systemPrompt || "";
+  const messages = buildMessagesFromHistory(history, systemPrompt);
+  messages.push({ role: "user", content: userText });
+
+  const { content } = await window.CosmosRP.callChat({
+    messages,
+    temperature: options.temperature ?? 0.7,
+    max_tokens: options.max_tokens ?? 512
+  });
+  return content || "";
+}
+
+// Provide a simple provider-agnostic entrypoint for the rest of the app/UI.
+window.GameAI = window.GameAI || {};
+/**
+ * window.GameAI.llm(input, opts)
+ * - input can be a string (prompt) or an object {history, userText}
+ */
+window.GameAI.llm = async (input, opts = {}) => {
+  try {
+    if (typeof input === "string") {
+      // No history; send as a single user message
+      const { content } = await window.CosmosRP.callChat({
+        messages: [{ role: "user", content: input }],
+        temperature: opts.temperature ?? 0.7,
+        max_tokens: opts.max_tokens ?? 512
+      });
+      return content || "";
+    } else if (input && typeof input === "object") {
+      const { history, userText } = input;
+      return await llmReplyWithCosmos(history || [], userText || "", opts);
+    }
+    throw new Error("Invalid input to GameAI.llm");
+  } catch (e) {
+    console.error("LLM error:", e);
+    throw e;
+  }
+};
+// ===== end CosmosRP wiring =====
 
 function advanceTime(){
   const TIME_SLOTS = GameConst.TIME_SLOTS;
