@@ -3,7 +3,6 @@
 console.log("✅ Loaded chat module from:", import.meta.url);
 
 const CHAT_OVERLAY_ID = 'chatModal';
-
 let overlay = null;
 let currentNpcId = null;
 let detachEsc = null; // to remove ESC handler when closing
@@ -31,10 +30,10 @@ function ensureModal() {
       </header>
       <div class="body" style="display:flex;flex-direction:column;gap:.6rem;min-height:380px;max-height:70vh">
         <div id="chatMessages" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:.4rem"></div>
-        <div class="row" id="chatControls" style="gap:.5rem">
+        <form class="row" id="chatForm" style="gap:.5rem">
           <input id="chatInput" class="btn-ghost" placeholder="Say something…" style="flex:1" autocomplete="off" />
-          <button id="chatSend" class="btn-primary" type="button">Send</button>
-        </div>
+          <button id="chatSend" class="btn-primary" type="submit">Send</button>
+        </form>
       </div>
     </div>`;
 
@@ -47,10 +46,21 @@ function ensureModal() {
   });
 
   overlay.querySelector('#chatCloseBtn').addEventListener('click', closeChatModal);
-  overlay.querySelector('#chatSend').addEventListener('click', sendCurrentMessage);
+
+  // form-based handler
+  const form = overlay.querySelector('#chatForm');
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    sendCurrentMessage();
+  });
+
+  // also allow Enter-to-send, Shift+Enter newline
   const input = overlay.querySelector('#chatInput');
   input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); sendCurrentMessage(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendCurrentMessage();
+    }
   });
 
   return overlay;
@@ -73,7 +83,7 @@ export function startChat(npcOrId){
   currentNpcId = npc.id;
   const rel = getRelationship(npc.id); // ensure exists + introduced
 
-  // Greet if the NPC hasn't spoken yet (covers first time and old stub histories)
+  // Greet if the NPC hasn't spoken yet
   const npcHasSpoken = Array.isArray(rel.history) && rel.history.some(h => h.speaker === npc.name);
   if (!npcHasSpoken) {
     rel.history = Array.isArray(rel.history) ? rel.history : [];
@@ -98,7 +108,7 @@ export function startChat(npcOrId){
   }
 
   // ESC closes while chat is open
-  detachEsc?.(); // remove previous if any
+  detachEsc?.();
   const escHandler = (e)=>{ if(e.key === 'Escape') closeChatModal(); };
   document.addEventListener('keydown', escHandler);
   detachEsc = ()=> document.removeEventListener('keydown', escHandler);
@@ -106,7 +116,6 @@ export function startChat(npcOrId){
   ov.style.display = 'flex';
   ov.setAttribute('aria-hidden','false');
 
-  // make sure input is visible + focused
   const input = ov.querySelector('#chatInput');
   if (input) { input.disabled = false; input.style.color = 'var(--text)'; input.value = ''; input.focus(); }
 
@@ -118,7 +127,7 @@ export function closeChatModal(){
   if (!ov) return;
   ov.style.display = 'none';
   ov.setAttribute('aria-hidden','true');
-  detachEsc?.(); // remove ESC handler
+  detachEsc?.();
 }
 
 export function renderChat(){
@@ -153,7 +162,6 @@ export function renderChat(){
   box.scrollTop = box.scrollHeight;
 }
 
-// replace the whole function:
 async function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
@@ -167,7 +175,6 @@ async function sendCurrentMessage(){
   const rel = getRelationship(currentNpcId);
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  // build compact context from last ~20 turns
   const history = Array.isArray(rel.history) ? rel.history.slice(-20) : [];
   const messages = [
     {
@@ -202,10 +209,7 @@ async function sendCurrentMessage(){
   renderChat();
 }
 
-// remove the old generateStubReply(...) entirely
-
-
-// (optional) expose to window for other modules that might call without importing
+// (optional) expose to window
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
 });
