@@ -1,5 +1,4 @@
 // /chat/index.js
-import { chatWithNpc } from '../src/cosmos.js';
 
 console.log("✅ Loaded chat module from:", import.meta.url);
 
@@ -168,7 +167,7 @@ async function sendCurrentMessage(){
   const rel = getRelationship(currentNpcId);
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  // Build compact chat history context (last ~20 turns)
+  // build compact context from last ~20 turns
   const history = Array.isArray(rel.history) ? rel.history.slice(-20) : [];
   const messages = [
     {
@@ -176,15 +175,16 @@ async function sendCurrentMessage(){
       content: `You are roleplaying as ${npc.name}${npc.role ? ', ' + npc.role : ''}. ` +
                `Persona: ${npc.persona || 'neutral'}. Stay in-character, natural, and concise.`
     },
-    ...history.map(h => h?.speaker === 'You'
-      ? { role: 'user', content: h.text }
-      : { role: 'assistant', content: h.text }
-    )
+    ...history
+      .filter(h => h && h.text)
+      .map(h => h.speaker === 'You'
+        ? { role: 'user', content: h.text }
+        : { role: 'assistant', content: h.text })
   ];
 
   try {
     if (!window.CosmosRP || !window.CosmosRP.callChat) {
-      throw new Error('CosmosRP client not loaded — ensure <script src="cosmos.js"></script> is in index.html.');
+      throw new Error('CosmosRP not loaded — ensure <script src="./cosmos.js"></script> is in index.html.');
     }
     const { content } = await window.CosmosRP.callChat({
       messages,
