@@ -67,11 +67,111 @@ export function closeCharacterBuilder(){
   ov.style.display = 'none'; ov.setAttribute('aria-hidden','true');
 }
 
+
 export async function generateCharacterFromPrompt(){
-  const prompt = $('charBuildPrompt')?.value.trim();
-  const out = $('charBuildJson');
-  const status = $('charBuildStatus');
-  if (!prompt) { if (status) status.textContent = 'Enter a concept first.'; return; }
+  const promptEl = document.getElementById('charBuildPrompt');
+  const resultEl = document.getElementById('charBuildJson');
+  const statusEl = document.getElementById('charBuildStatus');
+  const rawConcept = (promptEl?.value || '').trim();
+  if (!rawConcept) { statusEl && (statusEl.textContent = 'Enter a short concept first.'); return; }
+
+  // Safety & sanitization
+  const sexualRx = /\b()\b/i;
+  const familyRx  = /\b()\b/i;
+  let concept = rawConcept;
+  let sanitizedNote = '';
+  if (sexualRx.test(rawConcept)) {
+    // Remove sexual terms for safety
+    concept = concept.replace(sexualRx, '').replace(/\s{2,}/g,' ').trim();
+    sanitizedNote = ' (sanitized to remove sexual content)';
+  }
+  if (familyRx.test(rawConcept)) {
+    // Ensure family roles are treated non-sexually and PG-13
+    concept += ' The family role must be portrayed only in a non-sexual, PG-13 way (no explicit content).';
+  }
+
+  if (!window.CosmosRP || !window.CosmosRP.callChat) {
+    statusEl && (statusEl.textContent = 'Cosmos is not initialized. Check Settings.');
+    // Fall back to stub
+    const stub = normalize({ name: 'New NPC', role: 'Citizen', persona: 'Friendly, grounded, and responsible.' });
+    if (resultEl) resultEl.value = JSON.stringify(stub, null, 2);
+    return;
+  }
+
+  statusEl && (statusEl.textContent = 'Generating…' + sanitizedNote);
+
+  // World-aware guidance
+  const world = window.GameData?.WORLD || {};
+  const knownPlaces = world?.passages ? Object.keys(world.passages).slice(0, 40) : [];
+  const placeHint = knownPlaces.length ? `Locations you can use: ${knownPlaces.join(', ')}` : 'If unsure, use "Coffee Shop".';
+
+  const system = `You output STRICT JSON ONLY for an NPC in a slice-of-life game.
+Rules:
+- JSON only (no markdown, no comments).
+- Keep content PG-13. Do NOT include explicit sexual content. Family roles must be non-sexual.
+- "id" must be kebab-case (lowercase, a-z0-9 and dashes).
+- "days" use 1..7 (Mon..Sun). 
+- "slots" can be: early_morning, morning, lunch, afternoon, evening, night.
+- ${placeHint}
+
+Schema:
+{
+  "id": "kebab-case identifier",
+  "name": "string",
+  "role": "short job/role",
+  "gender": "male|female|unknown",
+  "avatar": "url or empty string",
+  "persona": "2-3 sentences, grounded, present tense",
+  "greeting": "a short in-character line",
+  "greetings": { "work": "str", "home": "str", "casual": "str" },
+  "appearance": { "height":"", "weight":"", "hair":"", "eyes":"", "style":"" },
+  "sexuality": { "orientation": "" },
+  "location": "one of the world places if possible",
+  "traits": ["short","tokens"],
+  "schedule": [ { "location":"Coffee Shop", "days":[1,2,3,4,5], "slots":["morning","lunch","afternoon"] } ]
+}`;
+
+  const user = `Concept: ${concept}
+Respond with valid JSON only.`;
+
+  try {
+    const { content } = await window.CosmosRP.callChat({
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ],
+      temperature: 0.6,
+      max_tokens: 700
+    });
+
+    let text = String(content || '').trim();
+    text = text.replace(/^```(?:json)?/i,'').replace(/```$/,'');
+    let obj;
+    try { obj = JSON.parse(text); }
+    catch {
+      // one repair attempt via a constrained re-ask
+      const { content: repair } = await window.CosmosRP.callChat({
+        messages: [
+          { role: 'system', content: 'Return valid JSON only; no explanations.' },
+          { role: 'user', content: 'Fix this into valid JSON that matches the schema: ' + text }
+        ],
+        temperature: 0,
+        max_tokens: 500
+      });
+      obj = JSON.parse(String(repair||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,''));
+    }
+
+    obj = normalize(obj);
+    if (resultEl) resultEl.value = JSON.stringify(obj, null, 2);
+    if (statusEl) statusEl.textContent = `Generated: ${obj.name} (${obj.role})` + sanitizedNote;
+  } catch (err) {
+    console.error(err);
+    statusEl && (statusEl.textContent = 'Failed to generate or parse JSON. A stub has been produced.');
+    const stub = normalize({ name: 'New NPC', role: 'Citizen', persona: 'Friendly, grounded, and responsible.' });
+    if (resultEl) resultEl.value = JSON.stringify(stub, null, 2);
+  }
+}
+
 
   if (!window.GameAI || !window.GameAI.llm) {
     if (status) status.textContent = 'Cosmos/LLM not configured. Falling back to stub.';

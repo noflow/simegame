@@ -1,0 +1,29 @@
+{
+  "passages": {
+    "Your Room": "You start in your room. Posters, a messy desk, and a window to the street.\n[[Go to the Hallway->Hallway]]",
+    "Hallway": "A narrow hallway with creaky boards and family pictures.\n[[Go to Mom's Room->Mom's Room]] [[Go to Bathroom->Bathroom]] [[Go to Sister's Room->Sister's Room]] [[Go Downstairs->Downstairs]] [[Back to Your Room->Your Room]]",
+    "Mom's Room": "Mom's door is half-open; the bed is neatly made.\n[[Back to Hallway->Hallway]]",
+    "Bathroom": "Cool tiles and a slightly noisy fan.\n[[Back to Hallway->Hallway]]",
+    "Sister's Room": "Posters, pink lights, clothes in tidy piles.\n[[Back to Hallway->Hallway]]",
+    "Downstairs": "You step into the downstairs landing where rooms branch off.\n[[Kitchen->Kitchen]] [[Living Room->Living Room]] [[Dining Room->Dining Room]] [[Back Yard->Back Yard]] [[To Street->Street]] [[Back Upstairs->Hallway]]",
+    "Kitchen": "Warm light and the smell of toast.\n[[Back to Downstairs->Downstairs]]",
+    "Living Room": "A comfy couch faces a low TV stand. Sunlight spills in.\n[[Back to Downstairs->Downstairs]]",
+    "Dining Room": "A table waiting for dinner time.\n[[Back to Downstairs->Downstairs]]",
+    "Back Yard": "Grass, a fence, and the neighbor's dog peeking over.\n[[Back to Downstairs->Downstairs]] [[To Street->Street]]",
+    "Street": "Your front steps face a quiet street.\n[[Go to City->City]] [[Go to Park->Park]] [[Back Inside->Downstairs]] [[Go to Apartments->Apartments]]",
+    "City": "You arrive in the city center. Shops and chatter everywhere.\n[[Go to Mall->Mall]] [[Go to Coffee Shop->Coffee Shop]] [[Back to Street->Street]] [[Go to Apartments->Apartments]]",
+    "Mall": "Escalators hum and a fountain splashes softly.\n[[Back to City->City]]",
+    "Coffee Shop": "The coffee shop hums with steam and soft piano. {npc:maya}\n[[Back to City->City]]",
+    "Park": "The park is dappled with sunlight and distant laughter. {npc:alex}\n[[Back to Street->Street]]",
+    "Library": "The library smells like dust and possibility. {npc:rin}\n[[Back to City->City]] [[Back to Street->Street]]",
+    "Apartments": "A tall brick building with several floors.\n[[Second Floor->Second Floor]] [[Back to City->City]] [[Back to Street->Street]]",
+    "Second Floor": "Dimly lit hallway with numbered doors. Some doors are locked until their owners invite you.\n[[Back to Apartments->Apartments]]",
+    "Maya's Apartment": {
+      "text": "Maya’s apartment is cozy with plants on the balcony.\n[[Back to Second Floor->Second Floor]]",
+      "locked": true
+    }
+  },
+  "Mom's Room": "Mom's Room. {npc:sarah}\n[[Back->Hallway]]",
+  "Sister's Room": "Sister's Room. {npc:lily}\n[[Back->Hallway]]",
+  "Kitchen": "Kitchen. {npc:sarah}\n[[Back->Hallway]]"
+}

@@ -195,6 +195,9 @@
           <input id="charsFile" type="file" accept="application/json" style="display:none"/>
 
           <button id="clearOverrides" class="btn-ghost" title="Use the built-in JSON again" disabled>Use built-in data</button>
+        
+          <label class="btn-ghost" for="chubFile" title="Load a chub.ai character JSON">Load chub.ai character.json</label>
+          <input id="chubFile" type="file" accept="application/json" style="display:none"/>
         </div>
         <p class="small" id="dataStatus" style="opacity:.8;margin:.25rem 0 0 0;">
           Using: <span id="worldSource">none</span> · <span id="charsSource">none</span>
@@ -207,6 +210,8 @@
           <button id="saveGame" class="btn-ghost">Save Game</button>
           <button id="resetGame" class="btn-ghost">Reset Game</button>
           <button id="exportChatBtn" class="btn-ghost">Export Chat</button>
+        
+          <button id="exportChars" class="btn-ghost">Export Characters</button>
         </div>
         <div class="divider"></div>
         <h3 class="small" style="margin:.25rem 0 .5rem 0;">AI Tools</h3>
@@ -249,6 +254,6 @@
 
 <link rel="icon" href="data:," />
 <script src="./src/cosmos.js"></script>
-<script type="module" src="./src/main.js?v=20"></script> <!-- bump v to clear cache -->
+<script type="module" src="./src/main.js?v=21"></script> <!-- bump v to clear cache -->
 </body>
 </html>
