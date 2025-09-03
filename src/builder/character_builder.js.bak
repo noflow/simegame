@@ -76,8 +76,8 @@ export async function generateCharacterFromPrompt(){
   if (!rawConcept) { statusEl && (statusEl.textContent = 'Enter a short concept first.'); return; }
 
   // Safety & sanitization
-  const sexualRx = /\b(?:sex|sexual|explicit|nsfw|porn|fetish|kink|erotic)\b/i;
-  const familyRx  = /\b(?:mom|mother|sister|brother|dad|father|stepmom|stepsister)\b/i;
+  const sexualRx = /\b()\b/i;
+  const familyRx  = /\b()\b/i;
   let concept = rawConcept;
   let sanitizedNote = '';
   if (sexualRx.test(rawConcept)) {
@@ -169,6 +169,50 @@ Respond with valid JSON only.`;
     statusEl && (statusEl.textContent = 'Failed to generate or parse JSON. A stub has been produced.');
     const stub = normalize({ name: 'New NPC', role: 'Citizen', persona: 'Friendly, grounded, and responsible.' });
     if (resultEl) resultEl.value = JSON.stringify(stub, null, 2);
+  }
+}
+
+
+  if (!window.GameAI || !window.GameAI.llm) {
+    if (status) status.textContent = 'Cosmos/LLM not configured. Falling back to stub.';
+    const stub = normalize({ name: 'New NPC', role: 'Citizen', persona: 'Friendly and grounded.' });
+    if (out) out.value = JSON.stringify(stub, null, 2);
+    return;
+  }
+
+  if (status) status.textContent = 'Generating…';
+
+  const system = `Return ONLY valid JSON (no markdown) for an NPC:\n{
+  "id": "kebab-case identifier",
+  "name": "string",
+  "role": "string",
+  "gender": "male|female|unknown",
+  "avatar": "url or empty string",
+  "persona": "<=60 words, grounded, present tense",
+  "greeting": "first casual line",
+  "greetings": { "work": "str", "home": "str", "casual": "str" },
+  "appearance": { "height":"", "weight":"", "hair":"", "eyes":"", "style":"" },
+  "sexuality": { "orientation": "" },
+  "location": "existing place if known",
+  "traits": ["short","tokens"],
+  "schedule": [ { "location":"Coffee Shop", "days":[1,2,3,4,5], "slots":["morning","lunch","afternoon"] } ]
+}`;
+
+  const user = `Concept: ${prompt}\nOutput JSON only.`;
+
+  try{
+    const content = await window.GameAI.llm({ history:[{speaker:"System", text:system}], userText: user }, { temperature:0.7, max_tokens:700 });
+    let text = String(content||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'');
+    let obj = safeParse(text);
+    if (!obj) throw new Error('Bad JSON from model');
+    obj = normalize(obj);
+    if (out) out.value = JSON.stringify(obj, null, 2);
+    if (status) status.textContent = `Generated: ${obj.name} (${obj.role})`;
+  }catch(e){
+    console.warn(e);
+    if (status) status.textContent = 'Failed to generate JSON; produced a stub.';
+    const stub = normalize({ name: 'New NPC', role: 'Citizen', persona: 'Friendly and grounded.' });
+    if (out) out.value = JSON.stringify(stub, null, 2);
   }
 }
 
