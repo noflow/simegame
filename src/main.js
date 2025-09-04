@@ -336,6 +336,7 @@ addEventListener('DOMContentLoaded', ()=>{
   
   
 // --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
+// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
 (function bridgeCosmosKey(){
   try {
     const k1 = localStorage.getItem('llm_api_key');
@@ -348,8 +349,12 @@ addEventListener('DOMContentLoaded', ()=>{
         const v = apiKeyInput.value.trim();
         localStorage.setItem('llm_api_key', v);
         localStorage.setItem('cosmos.apiKey', v);
-      
+      });
+    }
+  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
+})();
 
+// chub.ai importer and export chars (outside bridgeCosmosKey)
 document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
@@ -377,7 +382,6 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   }
 });
 
-
 document.getElementById('exportChars')?.addEventListener('click', () => {
   const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
@@ -387,10 +391,7 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
-});
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
+
 // ==== Character Creation Data & Logic ====
 const APPEARANCE_OPTIONS = {
   male: {
@@ -434,7 +435,7 @@ const ap = player.appearance || defaultAppearance(gender);
   const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
   const gEls = document.querySelectorAll('input[name="ccGender"]');
   gEls.forEach(r => { r.checked = (r.value === gender); });
-});
+
 
   // Render option grids & preview
   renderAppearanceSelectors(gender, ap);
@@ -564,23 +565,7 @@ function renderPlayerCard(){
       </div>
     </div>
   `;
-}
-  const ap = p.appearance || {};
-  box.innerHTML = `
-    <div class="player-card">
-      <img src="${ap.head || ''}" alt="Head"/>
-      <div>
-        <div class="pc-name">${p.name}</div>
-        <div class="small">Sex: ${p.gender}</div>
-        <div class="small">Path: ${p.path}</div>
-      </div>
-    </div>
-    <div class="row" style="margin-top:.4rem;gap:.4rem;">
-      <img src="${ap.torso || ''}" alt="Torso" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
-      <img src="${ap.legs || ''}" alt="Legs" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
-    </div>
-  `;
-}
+}}
 
 // Open creation on first run
 (function ensurePlayerAtStart(){
