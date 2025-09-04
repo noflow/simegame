@@ -45,44 +45,19 @@ async function readFileAsText(file) {
   });
 }
 
-function openSettingsModal(e){
+function openSettingsModal() {
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
-  // remember the opener (so we can restore focus later)
-  overlay._opener = (e && e.currentTarget) || document.activeElement;
-
   overlay.style.display = 'flex';
-  overlay.removeAttribute('inert');
   overlay.setAttribute('aria-hidden','false');
-
-  // focus a sensible element inside the modal
-  const first =
-    document.getElementById('settingsCloseBtn') ||
-    overlay.querySelector('[autofocus], button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ||
-    overlay;
-  if (first && first.focus) first.focus({ preventScroll: true });
+  setStatusBadges();
 }
 
-function closeSettingsModal(){
+function closeSettingsModal() {
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
-
-  // If focus is inside the modal, blur it first to avoid aria-hidden issues
-  if (overlay.contains(document.activeElement)) {
-    document.activeElement.blur();
-  }
-
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden','true');
-  overlay.setAttribute('inert',''); // prevent future focus while hidden
-
-  // Restore focus to the opener or a sensible fallback
-  const fallbackOpener =
-    overlay._opener ||
-    document.getElementById('openSettings') ||
-    document.getElementById('openSettings2') ||
-    document.body;
-  if (fallbackOpener && fallbackOpener.focus) fallbackOpener.focus();
 }
 
 // expose minimal globals
@@ -136,7 +111,7 @@ async function llmReplyWithCosmos(history, userText, options = {}) {
 window.GameAI = window.GameAI || {};
 
 // ===== chub.ai import + schedule merge helpers =====
-//const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
+const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
 
 function getWorldPlaces(limit = 24) {
   try {
@@ -373,18 +348,14 @@ addEventListener('DOMContentLoaded', ()=>{
         const v = apiKeyInput.value.trim();
         localStorage.setItem('llm_api_key', v);
         localStorage.setItem('cosmos.apiKey', v);
-      });
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
+      
 
-// chub.ai import
 document.getElementById('chubFile')?.addEventListener('change', async (e) => {
-  const f = e.target.files?.[0]; if (!f) return;
+  const f = e.target.files?.[0];
+  if (!f) return;
   try {
     const text = await new Promise((res, rej) => {
-      const fr = new FileReader(); fr.onerror = () => rej(fr.error||new Error('Read failed'));
-      fr.onload = () => res(String(fr.result||'')); fr.readAsText(f, 'utf-8');
+      const fr = new FileReader(); fr.onerror = () => rej(fr.error || new Error('Read failed')); fr.onload = () => res(String(fr.result || '')); fr.readAsText(f, 'utf-8');
     });
     const json = JSON.parse(text);
     let npc = chubToNpc(json);
@@ -406,7 +377,7 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   }
 });
 
-// export characters
+
 document.getElementById('exportChars')?.addEventListener('click', () => {
   const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
@@ -416,17 +387,197 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
+});
+    }
+  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
+})();
+// ==== Character Creation Data & Logic ====
+const APPEARANCE_OPTIONS = {
+  male: {
+    head:  ['images/player/male/head1.png','images/player/male/head2.png','images/player/male/head3.png'],
+    torso: ['images/player/male/torso1.png','images/player/male/torso2.png','images/player/male/torso3.png'],
+    legs:  ['images/player/male/legs1.png','images/player/male/legs2.png','images/player/male/legs3.png'],
+  },
+  female: {
+    head:  ['images/player/female/head1.png','images/player/female/head2.png','images/player/female/head3.png'],
+    torso: ['images/player/female/torso1.png','images/player/female/torso2.png','images/player/female/torso3.png'],
+    legs:  ['images/player/female/legs1.png','images/player/female/legs2.png','images/player/female/legs3.png'],
+  },
+  transgender: {
+    head:  ['images/player/trans/head1.png','images/player/trans/head2.png','images/player/trans/head3.png'],
+    torso: ['images/player/trans/torso1.png','images/player/trans/torso2.png','images/player/trans/torso3.png'],
+    legs:  ['images/player/trans/legs1.png','images/player/trans/legs2.png','images/player/trans/legs3.png'],
+  }
+};
+
+function defaultAppearance(g='male'){
+  const opt = APPEARANCE_OPTIONS[g] || APPEARANCE_OPTIONS.male;
+  return { head: opt.head[0], torso: opt.torso[0], legs: opt.legs[0] };
+}
+
+function openCharCreateModal(e){
+  const overlay = document.getElementById('charCreateModal');
+  if (!overlay) return;
+  overlay._opener = (e && e.currentTarget) || document.activeElement;
+  overlay.style.display = 'flex';
+  overlay.removeAttribute('inert');
+  overlay.setAttribute('aria-hidden','false');
+
+  // Seed defaults based on current/last gender
+  const st = GameState.state || {};
+  const player = st.player || {};
+  const gender = player.gender || 'male';
+  const name = player.name || '';
+  const path = player.path || 'college';
+  const ap = player.appearance || defaultAppearance(gender);
+
+  // Fill inputs
+  const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
+  const gEls = document.querySelectorAll('input[name="ccGender"]');
+  gEls.forEach(r => { r.checked = (r.value === gender); });
+  const pEls = document.querySelectorAll('input[name="ccPath"]');
+  pEls.forEach(r => { r.checked = (r.value === path); });
+
+  // Render option grids & preview
+  renderAppearanceSelectors(gender, ap);
+  wireCharCreateEvents();
+  (nameEl || overlay).focus?.({ preventScroll:true });
+}
+
+function closeCharCreateModal(){
+  const overlay = document.getElementById('charCreateModal');
+  if (!overlay) return;
+  if (overlay.contains(document.activeElement)) document.activeElement.blur();
+  overlay.style.display = 'none';
+  overlay.setAttribute('aria-hidden','true');
+  overlay.setAttribute('inert','');
+  (overlay._opener || document.getElementById('openSettings') || document.body)?.focus?.();
+}
+
+function wireCharCreateEvents(){
+  document.getElementById('charCreateCloseBtn')?.addEventListener('click', closeCharCreateModal, { once:true });
+  // Gender change re-renders selectors with defaults
+  document.querySelectorAll('input[name="ccGender"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const g = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
+      renderAppearanceSelectors(g, defaultAppearance(g));
+    });
+  });
+  document.getElementById('ccSave')?.addEventListener('click', saveCharacterFromModal, { once:true });
+}
+
+function renderAppearanceSelectors(gender, ap){
+  const opts = APPEARANCE_OPTIONS[gender] || APPEARANCE_OPTIONS.male;
+  renderOptionStrip('ccHead',  opts.head,  ap.head,  (v)=>{ ap.head=v; updatePreview(ap); });
+  renderOptionStrip('ccTorso', opts.torso, ap.torso, (v)=>{ ap.torso=v; updatePreview(ap); });
+  renderOptionStrip('ccLegs',  opts.legs,  ap.legs,  (v)=>{ ap.legs=v; updatePreview(ap); });
+  updatePreview(ap);
+  // stash draft on overlay for access on save
+  const overlay = document.getElementById('charCreateModal');
+  overlay._apDraft = ap;
+}
+
+function renderOptionStrip(id, list, current, onPick){
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.innerHTML = '';
+  list.forEach(src => {
+    const b = document.createElement('button');
+    b.className = 'btn-ghost';
+    b.style.padding = '.25rem'; b.style.borderRadius = '10px';
+    b.style.borderColor = (src === current) ? '#67c1f5' : '#2a3441';
+    b.innerHTML = `<img src="${src}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b" />`;
+    b.addEventListener('click', (e) => {
+      e.preventDefault();
+      onPick(src);
+      // re-render to reflect selection highlight
+      renderOptionStrip(id, list, src, onPick);
+    });
+    box.appendChild(b);
+  });
+}
+
+function updatePreview(ap){
+  const h = document.getElementById('ccPreviewHead');
+  const t = document.getElementById('ccPreviewTorso');
+  const l = document.getElementById('ccPreviewLegs');
+  if (h) h.src = ap.head;
+  if (t) t.src = ap.torso;
+  if (l) l.src = ap.legs;
+}
+
+function saveCharacterFromModal(){
+  const overlay = document.getElementById('charCreateModal');
+  const name = document.getElementById('ccName')?.value?.trim() || '';
+  const gender = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
+  const path = document.querySelector('input[name="ccPath"]:checked')?.value || 'college';
+  const ap = overlay?._apDraft || defaultAppearance(gender);
+
+  const player = {
+    name: name || 'Player',
+    gender,
+    path,
+    age: 18,
+    family: ['mother','sister'],
+    appearance: ap,
+    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Path: ${path}. Gender: ${gender}.`
+  };
+  GameState.state = GameState.state || {};
+  GameState.state.player = player;
+  try { GameState.saveState?.(); } catch(e){}
+
+  renderPlayerCard();
+  closeCharCreateModal();
+}
+
+function renderPlayerCard(){
+  const box = document.getElementById('sidebarInfo');
+  if (!box) return;
+  const p = (GameState.state && GameState.state.player) || null;
+  // Remove day/time/money info
+  box.innerHTML = '';
+  if (!p){
+    box.innerHTML = '<div class="small">No character yet.</div>';
+    return;
+  }
+  const ap = p.appearance || {};
+  box.innerHTML = `
+    <div class="player-card">
+      <img src="${ap.head || ''}" alt="Head"/>
+      <div>
+        <div class="pc-name">${p.name}</div>
+        <div class="small">Sex: ${p.gender}</div>
+        <div class="small">Path: ${p.path}</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:.4rem;gap:.4rem;">
+      <img src="${ap.torso || ''}" alt="Torso" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
+      <img src="${ap.legs || ''}" alt="Legs" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
+    </div>
+  `;
+}
+
+// Open creation on first run
+(function ensurePlayerAtStart(){
+  const p = (GameState.state && GameState.state.player) || null;
+  if (!p) {
+    // Delay until DOM ready
+    setTimeout(()=> openCharCreateModal(), 50);
+  } else {
+    renderPlayerCard();
+  }
+})();
 
 // header buttons
-{ const el = document.getElementById('advance'); if (el) el.addEventListener('click', advanceTime); }
+  { const el = document.getElementById('advance'); if (el) el.addEventListener('click', advanceTime); }
 
-// settings open/close
-{ const el = document.getElementById('openSettings');  if (el) el.addEventListener('click', openSettingsModal); }
-{ const el = document.getElementById('openSettings2'); if (el) el.addEventListener('click', openSettingsModal); }
-{ const el = document.getElementById('settingsCloseBtn'); if (el) el.addEventListener('click', closeSettingsModal); }
-document.getElementById('settingsModal')?.addEventListener('click', (e)=>{
-  if (e.target && e.target.id === 'settingsModal') closeSettingsModal();
-});
+  // settings open/close
+  { const el = document.getElementById('openSettings');  if (el) el.addEventListener('click', openSettingsModal); }
+  { const el = document.getElementById('openSettings2'); if (el) el.addEventListener('click', openSettingsModal); }
+  { const el = document.getElementById('settingsCloseBtn'); if (el) el.addEventListener('click', closeSettingsModal); }
+  document.getElementById('settingsModal')?.addEventListener('click', (e)=>{
+    if (e.target && e.target.id === 'settingsModal') closeSettingsModal();
+  });
 
   // Known Characters modal wiring
   { const el = document.getElementById('openKnown');      if (el) el.addEventListener('click', Known.openKnownModal); }
@@ -548,4 +699,8 @@ document.getElementById('settingsModal')?.addEventListener('click', (e)=>{
   { const el = document.getElementById('charBuildGenerate'); if (el) el.addEventListener('click', CharBuild.generateCharacterFromPrompt); }
   { const el = document.getElementById('charBuildSave');      if (el) el.addEventListener('click', CharBuild.addCharacterToGame); }
 
+});
+// Close character create when clicking the backdrop
+document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
+  if (e.target && e.target.id === 'charCreateModal') closeCharCreateModal();
 });
