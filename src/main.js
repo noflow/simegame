@@ -111,7 +111,7 @@ async function llmReplyWithCosmos(history, userText, options = {}) {
 window.GameAI = window.GameAI || {};
 
 // ===== chub.ai import + schedule merge helpers =====
-const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
+//const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
 
 function getWorldPlaces(limit = 24) {
   try {
