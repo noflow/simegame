@@ -435,15 +435,12 @@ function openCharCreateModal(e){
   const player = st.player || {};
   const gender = player.gender || 'male';
   const name = player.name || '';
-  const path = player.path || 'college';
   const ap = player.appearance || defaultAppearance(gender);
 
   // Fill inputs
   const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
   const gEls = document.querySelectorAll('input[name="ccGender"]');
-  gEls.forEach(r => { r.checked = (r.value === gender); });
-  const pEls = document.querySelectorAll('input[name="ccPath"]');
-  pEls.forEach(r => { r.checked = (r.value === path); });
+  gEls.forEach(r => { r.checked = (r.value === gender); });});
 
   // Render option grids & preview
   renderAppearanceSelectors(gender, ap);
@@ -517,19 +514,17 @@ function saveCharacterFromModal(){
   const overlay = document.getElementById('charCreateModal');
   const name = document.getElementById('ccName')?.value?.trim() || '';
   const gender = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
-  const path = document.querySelector('input[name="ccPath"]:checked')?.value || 'college';
   const ap = overlay?._apDraft || defaultAppearance(gender);
 
   const player = {
     name: name || 'Player',
     gender,
-    path,
     age: 18,
     family: ['mother','sister'],
     appearance: ap,
-    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Path: ${path}. Gender: ${gender}.`
+    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Gender: ${gender}.`
   };
-  GameState.state = GameState.state || {};
+  // (no reassign) GameState.state is a module export object
   GameState.state.player = player;
   try { GameState.saveState?.(); } catch(e){}
 
@@ -554,8 +549,7 @@ function renderPlayerCard(){
       <div>
         <div class="pc-name">${p.name}</div>
         <div class="small">Sex: ${p.gender}</div>
-        <div class="small">Path: ${p.path}</div>
-      </div>
+              </div>
     </div>
     <div class="row" style="margin-top:.4rem;gap:.4rem;">
       <img src="${ap.torso || ''}" alt="Torso" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
