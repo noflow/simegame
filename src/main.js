@@ -348,14 +348,18 @@ addEventListener('DOMContentLoaded', ()=>{
         const v = apiKeyInput.value.trim();
         localStorage.setItem('llm_api_key', v);
         localStorage.setItem('cosmos.apiKey', v);
-      
+      });
+    }
+  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
+})();
 
+// chub.ai import
 document.getElementById('chubFile')?.addEventListener('change', async (e) => {
-  const f = e.target.files?.[0];
-  if (!f) return;
+  const f = e.target.files?.[0]; if (!f) return;
   try {
     const text = await new Promise((res, rej) => {
-      const fr = new FileReader(); fr.onerror = () => rej(fr.error || new Error('Read failed')); fr.onload = () => res(String(fr.result || '')); fr.readAsText(f, 'utf-8');
+      const fr = new FileReader(); fr.onerror = () => rej(fr.error||new Error('Read failed'));
+      fr.onload = () => res(String(fr.result||'')); fr.readAsText(f, 'utf-8');
     });
     const json = JSON.parse(text);
     let npc = chubToNpc(json);
@@ -377,7 +381,7 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   }
 });
 
-
+// export characters
 document.getElementById('exportChars')?.addEventListener('click', () => {
   const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
@@ -387,20 +391,17 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
-});
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
-// header buttons
-  { const el = document.getElementById('advance'); if (el) el.addEventListener('click', advanceTime); }
 
-  // settings open/close
-  { const el = document.getElementById('openSettings');  if (el) el.addEventListener('click', openSettingsModal); }
-  { const el = document.getElementById('openSettings2'); if (el) el.addEventListener('click', openSettingsModal); }
-  { const el = document.getElementById('settingsCloseBtn'); if (el) el.addEventListener('click', closeSettingsModal); }
-  document.getElementById('settingsModal')?.addEventListener('click', (e)=>{
-    if (e.target && e.target.id === 'settingsModal') closeSettingsModal();
-  });
+// header buttons
+{ const el = document.getElementById('advance'); if (el) el.addEventListener('click', advanceTime); }
+
+// settings open/close
+{ const el = document.getElementById('openSettings');  if (el) el.addEventListener('click', openSettingsModal); }
+{ const el = document.getElementById('openSettings2'); if (el) el.addEventListener('click', openSettingsModal); }
+{ const el = document.getElementById('settingsCloseBtn'); if (el) el.addEventListener('click', closeSettingsModal); }
+document.getElementById('settingsModal')?.addEventListener('click', (e)=>{
+  if (e.target && e.target.id === 'settingsModal') closeSettingsModal();
+});
 
   // Known Characters modal wiring
   { const el = document.getElementById('openKnown');      if (el) el.addEventListener('click', Known.openKnownModal); }
