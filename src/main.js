@@ -45,19 +45,29 @@ async function readFileAsText(file) {
   });
 }
 
-function openSettingsModal() {
+function openSettingsModal(e){
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
+  overlay._opener = (e && e.currentTarget) || document.activeElement;
   overlay.style.display = 'flex';
+  overlay.removeAttribute('inert');
   overlay.setAttribute('aria-hidden','false');
   setStatusBadges();
+  const focusTarget =
+    document.getElementById('settingsCloseBtn') ||
+    overlay.querySelector('[autofocus], button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ||
+    overlay;
+  focusTarget?.focus?.({ preventScroll: true });
 }
 
-function closeSettingsModal() {
+function closeSettingsModal(){
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
+  if (overlay.contains(document.activeElement)) document.activeElement.blur();
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden','true');
+  overlay.setAttribute('inert','');
+  (overlay._opener || document.getElementById('openSettings') || document.getElementById('openSettings2') || document.body)?.focus?.();
 }
 
 // expose minimal globals
@@ -109,10 +119,7 @@ async function llmReplyWithCosmos(history, userText, options = {}) {
 
 // Provide a simple provider-agnostic entrypoint for the rest of the app/UI.
 window.GameAI = window.GameAI || {};
-
 // ===== chub.ai import + schedule merge helpers =====
-const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
-
 function getWorldPlaces(limit = 24) {
   try {
     const p = window.GameData?.WORLD?.passages || {};
@@ -336,6 +343,7 @@ addEventListener('DOMContentLoaded', ()=>{
   
   
 // --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
+// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
 (function bridgeCosmosKey(){
   try {
     const k1 = localStorage.getItem('llm_api_key');
@@ -348,8 +356,11 @@ addEventListener('DOMContentLoaded', ()=>{
         const v = apiKeyInput.value.trim();
         localStorage.setItem('llm_api_key', v);
         localStorage.setItem('cosmos.apiKey', v);
-      
-
+      });
+    }
+  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
+})();
+// chub.ai importer and export chars (outside bridgeCosmosKey)
 document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
@@ -377,7 +388,6 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   }
 });
 
-
 document.getElementById('exportChars')?.addEventListener('click', () => {
   const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
@@ -387,10 +397,7 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
-});
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
+
 // ==== Character Creation Data & Logic ====
 const APPEARANCE_OPTIONS = {
   male: {
