@@ -440,7 +440,7 @@ function openCharCreateModal(e){
   // Fill inputs
   const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
   const gEls = document.querySelectorAll('input[name="ccGender"]');
-  gEls.forEach(r => { r.checked = (r.value === gender); });});
+  gEls.forEach(r => { r.checked = (r.value === gender); });
 
   // Render option grids & preview
   renderAppearanceSelectors(gender, ap);
