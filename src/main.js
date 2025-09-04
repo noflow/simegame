@@ -45,19 +45,44 @@ async function readFileAsText(file) {
   });
 }
 
-function openSettingsModal() {
+function openSettingsModal(e){
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
+  // remember the opener (so we can restore focus later)
+  overlay._opener = (e && e.currentTarget) || document.activeElement;
+
   overlay.style.display = 'flex';
+  overlay.removeAttribute('inert');
   overlay.setAttribute('aria-hidden','false');
-  setStatusBadges();
+
+  // focus a sensible element inside the modal
+  const first =
+    document.getElementById('settingsCloseBtn') ||
+    overlay.querySelector('[autofocus], button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ||
+    overlay;
+  if (first && first.focus) first.focus({ preventScroll: true });
 }
 
-function closeSettingsModal() {
+function closeSettingsModal(){
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
+
+  // If focus is inside the modal, blur it first to avoid aria-hidden issues
+  if (overlay.contains(document.activeElement)) {
+    document.activeElement.blur();
+  }
+
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden','true');
+  overlay.setAttribute('inert',''); // prevent future focus while hidden
+
+  // Restore focus to the opener or a sensible fallback
+  const fallbackOpener =
+    overlay._opener ||
+    document.getElementById('openSettings') ||
+    document.getElementById('openSettings2') ||
+    document.body;
+  if (fallbackOpener && fallbackOpener.focus) fallbackOpener.focus();
 }
 
 // expose minimal globals
