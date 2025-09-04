@@ -333,6 +333,7 @@ addEventListener('DOMContentLoaded', ()=>{
   
   
 // --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
+// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
 (function bridgeCosmosKey(){
   try {
     const k1 = localStorage.getItem('llm_api_key');
@@ -345,8 +346,12 @@ addEventListener('DOMContentLoaded', ()=>{
         const v = apiKeyInput.value.trim();
         localStorage.setItem('llm_api_key', v);
         localStorage.setItem('cosmos.apiKey', v);
-      
+      });
+    }
+  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
+})();
 
+// chub.ai importer and export chars (outside bridgeCosmosKey)
 document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
@@ -374,7 +379,6 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   }
 });
 
-
 document.getElementById('exportChars')?.addEventListener('click', () => {
   const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
@@ -384,10 +388,7 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
-});
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
+
 // ==== Character Creation Data & Logic ====
 const APPEARANCE_OPTIONS = {
   male: {
@@ -425,20 +426,17 @@ function openCharCreateModal(e){
   const player = st.player || {};
   const gender = player.gender || 'male';
   const name = player.name || '';
-  const path = player.path || 'college';
   const ap = player.appearance || defaultAppearance(gender);
 
   // Fill inputs
   const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
   const gEls = document.querySelectorAll('input[name="ccGender"]');
-  gEls.forEach(r => { r.checked = (r.value === gender); });
-  const pEls = document.querySelectorAll('input[name="ccPath"]');
-  pEls.forEach(r => { r.checked = (r.value === path); });
+  gEls.forEach(r => { r.checked = (r.value === gender); });});
 
   // Render option grids & preview
   renderAppearanceSelectors(gender, ap);
   wireCharCreateEvents();
-  (nameEl || overlay).focus?.({ preventScroll:true });
+  const _t = nameEl || overlay; if (_t && typeof _t.focus === 'function') _t.focus({ preventScroll:true });
 }
 
 function closeCharCreateModal(){
@@ -507,19 +505,17 @@ function saveCharacterFromModal(){
   const overlay = document.getElementById('charCreateModal');
   const name = document.getElementById('ccName')?.value?.trim() || '';
   const gender = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
-  const path = document.querySelector('input[name="ccPath"]:checked')?.value || 'college';
   const ap = overlay?._apDraft || defaultAppearance(gender);
 
   const player = {
     name: name || 'Player',
     gender,
-    path,
     age: 18,
     family: ['mother','sister'],
     appearance: ap,
-    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Path: ${path}. Gender: ${gender}.`
+    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Gender: ${gender}.`
   };
-  GameState.state = GameState.state || {};
+  // (no reassign) GameState.state is a module export object
   GameState.state.player = player;
   try { GameState.saveState?.(); } catch(e){}
 
