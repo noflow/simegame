@@ -111,7 +111,7 @@ async function llmReplyWithCosmos(history, userText, options = {}) {
 window.GameAI = window.GameAI || {};
 
 // ===== chub.ai import + schedule merge helpers =====
-//const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
+const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
 
 function getWorldPlaces(limit = 24) {
   try {
@@ -336,7 +336,6 @@ addEventListener('DOMContentLoaded', ()=>{
   
   
 // --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
-// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
 (function bridgeCosmosKey(){
   try {
     const k1 = localStorage.getItem('llm_api_key');
@@ -349,12 +348,8 @@ addEventListener('DOMContentLoaded', ()=>{
         const v = apiKeyInput.value.trim();
         localStorage.setItem('llm_api_key', v);
         localStorage.setItem('cosmos.apiKey', v);
-      });
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
+      
 
-// chub.ai importer and export chars (outside bridgeCosmosKey)
 document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
@@ -382,6 +377,7 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   }
 });
 
+
 document.getElementById('exportChars')?.addEventListener('click', () => {
   const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
@@ -391,7 +387,10 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
-
+});
+    }
+  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
+})();
 // ==== Character Creation Data & Logic ====
 const APPEARANCE_OPTIONS = {
   male: {
@@ -429,18 +428,20 @@ function openCharCreateModal(e){
   const player = st.player || {};
   const gender = player.gender || 'male';
   const name = player.name || '';
-const ap = player.appearance || defaultAppearance(gender);
+  const path = player.path || 'college';
+  const ap = player.appearance || defaultAppearance(gender);
 
   // Fill inputs
   const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
   const gEls = document.querySelectorAll('input[name="ccGender"]');
   gEls.forEach(r => { r.checked = (r.value === gender); });
-
+  const pEls = document.querySelectorAll('input[name="ccPath"]');
+  pEls.forEach(r => { r.checked = (r.value === path); });
 
   // Render option grids & preview
   renderAppearanceSelectors(gender, ap);
   wireCharCreateEvents();
-  const __t = nameEl || overlay; if (__t && typeof __t.focus === 'function') __t.focus({ preventScroll:true });
+  (nameEl || overlay).focus?.({ preventScroll:true });
 }
 
 function closeCharCreateModal(){
@@ -509,17 +510,19 @@ function saveCharacterFromModal(){
   const overlay = document.getElementById('charCreateModal');
   const name = document.getElementById('ccName')?.value?.trim() || '';
   const gender = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
-const ap = overlay?._apDraft || defaultAppearance(gender);
+  const path = document.querySelector('input[name="ccPath"]:checked')?.value || 'college';
+  const ap = overlay?._apDraft || defaultAppearance(gender);
 
   const player = {
     name: name || 'Player',
     gender,
+    path,
     age: 18,
     family: ['mother','sister'],
     appearance: ap,
-    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Gender: ${gender}.`
+    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Path: ${path}. Gender: ${gender}.`
   };
-  // (no reassign) GameState.state is a module export object
+  GameState.state = GameState.state || {};
   GameState.state.player = player;
   try { GameState.saveState?.(); } catch(e){}
 
@@ -530,42 +533,29 @@ const ap = overlay?._apDraft || defaultAppearance(gender);
 function renderPlayerCard(){
   const box = document.getElementById('sidebarInfo');
   if (!box) return;
-  const p = (window.GameState && window.GameState.state && window.GameState.state.player) || null;
+  const p = (GameState.state && GameState.state.player) || null;
+  // Remove day/time/money info
   box.innerHTML = '';
   if (!p){
     box.innerHTML = '<div class="small">No character yet.</div>';
     return;
   }
   const ap = p.appearance || {};
-  const wrapStyle = 'display:flex;flex-direction:column;gap:.5rem';
-  const chip = 'font-size:.8rem;opacity:.85;letter-spacing:.02em';
-  const label = 'font-size:.75rem;opacity:.75;margin:.25rem 0 .1rem';
-  const boxStyle = 'width:100%;height:100px;border:1px solid #1b222b;border-radius:10px;background:#0f141a;display:flex;align-items:center;justify-content:center;overflow:hidden';
-  const imgStyle = 'max-width:100%;max-height:100%;object-fit:cover;display:block';
-
   box.innerHTML = `
-    <div style="${wrapStyle}">
-      <div style="${chip}">Your Info</div>
-      <div style="font-weight:600">${p.name || 'Player'}</div>
-      <div class="small">Sex: ${p.gender || '—'}</div>
-
-      <div style="${label}">Head</div>
-      <div style="${boxStyle}">
-        ${ap.head ? `<img src="${ap.head}" alt="Head" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No head selected</div>'}
-      </div>
-
-      <div style="${label}">Torso</div>
-      <div style="${boxStyle}">
-        ${ap.torso ? `<img src="${ap.torso}" alt="Torso" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No torso selected</div>'}
-      </div>
-
-      <div style="${label}">Legs</div>
-      <div style="${boxStyle}">
-        ${ap.legs ? `<img src="${ap.legs}" alt="Legs" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No legs selected</div>'}
+    <div class="player-card">
+      <img src="${ap.head || ''}" alt="Head"/>
+      <div>
+        <div class="pc-name">${p.name}</div>
+        <div class="small">Sex: ${p.gender}</div>
+        
       </div>
     </div>
+    <div class="row" style="margin-top:.4rem;gap:.4rem;">
+      <img src="${ap.torso || ''}" alt="Torso" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
+      <img src="${ap.legs || ''}" alt="Legs" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
+    </div>
   `;
-}}
+}
 
 // Open creation on first run
 (function ensurePlayerAtStart(){
