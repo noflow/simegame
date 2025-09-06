@@ -446,7 +446,7 @@ function closeCharCreateModal(){
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden','true');
   overlay.setAttribute('inert','');
-  (overlay._opener || document.getElementById('openSettings') || document.body)?.focus?.();
+  const __op = overlay._opener || document.getElementById('openSettings') || document.body; if (__op && typeof __op.focus === 'function') __op.focus();
 }
 
 function wireCharCreateEvents(){
@@ -526,14 +526,46 @@ function saveCharacterFromModal(){
 function renderPlayerCard(){
   const box = document.getElementById('sidebarInfo');
   if (!box) return;
-  const p = (GameState.state && GameState.state.player) || null;
-  // Remove day/time/money info
+
+  const p = (window.GameState && window.GameState.state && window.GameState.state.player) || null;
   box.innerHTML = '';
   if (!p){
     box.innerHTML = '<div class="small">No character yet.</div>';
     return;
   }
+
   const ap = p.appearance || {};
+  const wrapStyle = 'display:flex;flex-direction:column;gap:.5rem';
+  const title = 'font-size:.8rem;opacity:.85;letter-spacing:.02em';
+  const label = 'font-size:.75rem;opacity:.75;margin:.25rem 0 .1rem';
+  const boxStyle = 'width:100%;height:100px;border:1px solid #1b222b;border-radius:10px;background:#0f141a;display:flex;align-items:center;justify-content:center;overflow:hidden';
+  const imgStyle = 'max-width:100%;max-height:100%;object-fit:cover;display:block';
+
+  box.innerHTML = `
+    <div style="${wrapStyle}">
+      <div style="${title}">Your Info</div>
+
+      <div class="pc-name">${p.name || 'Player'}</div>
+      <div class="small">Sex: ${p.gender || '—'}</div>
+
+      <div style="${label}">Head</div>
+      <div style="${boxStyle}">
+        ${ap.head ? `<img src="${ap.head}" alt="Head" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No head selected</div>'}
+      </div>
+
+      <div style="${label}">Torso</div>
+      <div style="${boxStyle}">
+        ${ap.torso ? `<img src="${ap.torso}" alt="Torso" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No torso selected</div>'}
+      </div>
+
+      <div style="${label}">Legs</div>
+      <div style="${boxStyle}">
+        ${ap.legs ? `<img src="${ap.legs}" alt="Legs" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No legs selected</div>'}
+      </div>
+    </div>
+  `;
+}
+const ap = p.appearance || {};
   box.innerHTML = `
     <div class="player-card">
       <img src="${ap.head || ''}" alt="Head"/>
