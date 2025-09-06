@@ -333,7 +333,6 @@ addEventListener('DOMContentLoaded', ()=>{
   
   
 // --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
-// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
 (function bridgeCosmosKey(){
   try {
     const k1 = localStorage.getItem('llm_api_key');
@@ -564,25 +563,7 @@ function renderPlayerCard(){
       </div>
     </div>
   `;
-}
-const ap = p.appearance || {};
-  box.innerHTML = `
-    <div class="player-card">
-      <img src="${ap.head || ''}" alt="Head"/>
-      <div>
-        <div class="pc-name">${p.name}</div>
-        <div class="small">Sex: ${p.gender}</div>
-        
-      </div>
-    </div>
-    <div class="row" style="margin-top:.4rem;gap:.4rem;">
-      <img src="${ap.torso || ''}" alt="Torso" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
-      <img src="${ap.legs || ''}" alt="Legs" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
-    </div>
-  `;
-}
-
-// Open creation on first run
+}// Open creation on first run
 (function ensurePlayerAtStart(){
   const p = (GameState.state && GameState.state.player) || null;
   if (!p) {
