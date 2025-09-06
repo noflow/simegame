@@ -1,0 +1,89 @@
+{
+  "id": "alex",
+  "name": "Alex",
+  "role": "Dog Walker",
+  "location": "Park",
+  "avatar": "images/alex.png",
+  "talkLimit": 3,
+  "persona": "Alex is a 25-year-old who loves animals, especially dogs. Outgoing and energetic, Alex spends most of the day outdoors. Friendly and approachable, Alex is quick to strike up conversations but has deeper thoughts under the surface.",
+  "appearance": {
+    "height": "5ft10in",
+    "weight": "165 lbs",
+    "hair": "Blond, short and messy",
+    "eyes": "Blue",
+    "style": "Casual, usually shorts and t-shirts for dog walking"
+  },
+  "traits": [
+    "Energetic",
+    "Easy-going",
+    "Animal lover",
+    "Optimistic"
+  ],
+  "secrets": [
+    "Has a fear of being alone despite outgoing nature.",
+    "Writes songs but never performs them.",
+    "Once dreamed of being a veterinarian."
+  ],
+  "schedule": [
+    {
+      "days": [
+        2,
+        4,
+        6
+      ],
+      "slots": [
+        "morning",
+        "afternoon"
+      ],
+      "location": "Park"
+    }
+  ],
+  "friendship": {
+    "level": 0,
+    "max": 100
+  },
+  "romance": {
+    "level": 0,
+    "max": 100
+  },
+  "intro_required": true,
+  "fetishes": [
+    "dogs",
+    "running shoes"
+  ],
+  "chat_behavior": {
+    "minTalkLevel": 15,
+    "busyLines": [
+      "Kinda busy with the dogs right now.",
+      "Sorry, can\u2019t chat long."
+    ],
+    "smallTalkLines": [
+      "Morning!",
+      "Hey, how\u2019s it going?"
+    ]
+  },
+  "greetings": {
+    "work": "I'm walking dogs, can we talk later?",
+    "casual": "Yo, out enjoying the day?",
+    "home": "Come on in, excuse the dog hair."
+  },
+  "sexuality": {
+    "orientation": "straight",
+    "experience": "Had several relationships, usually short-term, enjoys casual dating.",
+    "preferences": [
+      "physical activity with a partner",
+      "shared love of animals",
+      "spontaneity"
+    ],
+    "kinks": [
+      "outdoor intimacy",
+      "light teasing",
+      "play wrestling"
+    ],
+    "limits": [
+      "no degradation",
+      "no extreme bondage"
+    ],
+    "discovery": "Alex is open about being straight, but only reveals playful kinks once romance deepens."
+  }
+}

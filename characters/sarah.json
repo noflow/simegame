@@ -1,0 +1,102 @@
+{
+  "id": "sarah",
+  "name": "Sarah Thompson",
+  "role": "High School English Teacher",
+  "location": "Mom's Room",
+  "avatar": "images/sarah_thompson.png",
+  "talkLimit": 5,
+  "persona": "Warm-hearted and nurturing, often protective; loves family game nights and classic films.",
+  "appearance": {
+    "height": "5ft6in",
+    "weight": "145 lbs",
+    "hair": "Shoulder-length auburn curls",
+    "eyes": "Blue-green hazel",
+    "style": "Cozy sweaters and leggings; dresses up for special occasions"
+  },
+  "traits": [
+    "Patient",
+    "Nurturing",
+    "Stubborn",
+    "Romantic"
+  ],
+  "secrets": [
+    "Kept a teenage diary with dreams of traveling the world.",
+    "Sometimes feels torn between responsibilities and personal aspirations."
+  ],
+  "schedule": [
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slots": [
+        "morning",
+        "afternoon"
+      ],
+      "location": "School"
+    },
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slots": [
+        "evening"
+      ],
+      "location": "Kitchen"
+    },
+    {
+      "days": [
+        6,
+        7
+      ],
+      "slots": [
+        "morning"
+      ],
+      "location": "Grocery Store"
+    },
+    {
+      "days": [
+        6,
+        7
+      ],
+      "slots": [
+        "afternoon",
+        "evening"
+      ],
+      "location": "Living Room"
+    }
+  ],
+  "friendship": {
+    "level": 0,
+    "max": 100
+  },
+  "romance": {
+    "level": 0,
+    "max": 0,
+    "locked": true
+  },
+  "familyRelation": "mother",
+  "intro_required": true,
+  "chat_behavior": {
+    "minTalkLevel": 10,
+    "busyLines": [
+      "I\u2019m grading right now\u2014give me a little bit?",
+      "Dinner\u2019s almost ready; can we chat after?"
+    ],
+    "smallTalkLines": [
+      "How was your day?",
+      "Don\u2019t forget to eat something!"
+    ]
+  },
+  "greetings": {
+    "home": "Hey, sweetie. Need anything?",
+    "casual": "Oh! I didn\u2019t hear you come in."
+  }
+}

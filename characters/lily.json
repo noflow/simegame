@@ -1,0 +1,91 @@
+{
+  "id": "lily",
+  "name": "Lily Thompson",
+  "role": "College Student (Psychology)",
+  "location": "Sister's Room",
+  "avatar": "images/lily_thompson.png",
+  "talkLimit": 4,
+  "persona": "Outgoing and confident with a reckless streak; blunt but secretly tender-hearted.",
+  "appearance": {
+    "height": "5ft8in",
+    "weight": "130 lbs",
+    "hair": "Long black curls with purple streaks",
+    "eyes": "Dark brown",
+    "style": "Eclectic vintage-meets-modern; bold makeup and statement jewelry"
+  },
+  "traits": [
+    "Charismatic",
+    "Impulsive",
+    "Loyal",
+    "Sensitive"
+  ],
+  "secrets": [
+    "Struggles with focus; doodles constantly to cope with restlessness.",
+    "Has a small phoenix tattoo symbolizing resilience."
+  ],
+  "schedule": [
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slots": [
+        "morning",
+        "afternoon"
+      ],
+      "location": "City"
+    },
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slots": [
+        "evening"
+      ],
+      "location": "Sister's Room"
+    },
+    {
+      "days": [
+        6,
+        7
+      ],
+      "slots": [
+        "afternoon"
+      ],
+      "location": "Mall"
+    }
+  ],
+  "friendship": {
+    "level": 0,
+    "max": 100
+  },
+  "romance": {
+    "level": 0,
+    "max": 0,
+    "locked": true
+  },
+  "familyRelation": "sister",
+  "intro_required": true,
+  "chat_behavior": {
+    "minTalkLevel": 15,
+    "busyLines": [
+      "Can this wait? I\u2019ve got a deadline.",
+      "Ugh\u2014study crunch. Later?"
+    ],
+    "smallTalkLines": [
+      "You look beat\u2014want a snack?",
+      "We should hit the city this weekend."
+    ]
+  },
+  "greetings": {
+    "home": "Yo, you seen my headphones?",
+    "casual": "Sup. Got plans?"
+  }
+}

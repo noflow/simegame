@@ -1,0 +1,91 @@
+{
+  "id": "rin",
+  "name": "Rin",
+  "role": "Librarian",
+  "location": "Library",
+  "avatar": "images/rin.png",
+  "talkLimit": 3,
+  "persona": "Rin is a 27-year-old librarian, quiet and witty with a love of books and knowledge. Reserved in public, Rin opens up gradually, revealing a sharp sense of humor and empathy. Prefers meaningful conversations over small talk.",
+  "appearance": {
+    "height": "5ft6in",
+    "weight": "125 lbs",
+    "hair": "Black, straight, shoulder length",
+    "eyes": "Brown",
+    "style": "Smart casual, cardigans and skirts, reading glasses"
+  },
+  "traits": [
+    "Intelligent",
+    "Witty",
+    "Empathetic",
+    "Reserved"
+  ],
+  "secrets": [
+    "Keeps a collection of love letters never sent.",
+    "Writes fanfiction anonymously online.",
+    "Struggles with social anxiety."
+  ],
+  "schedule": [
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slots": [
+        "afternoon",
+        "evening"
+      ],
+      "location": "Library"
+    }
+  ],
+  "friendship": {
+    "level": 0,
+    "max": 100
+  },
+  "romance": {
+    "level": 0,
+    "max": 100
+  },
+  "intro_required": true,
+  "fetishes": [
+    "old books",
+    "quiet voices"
+  ],
+  "chat_behavior": {
+    "minTalkLevel": 30,
+    "busyLines": [
+      "Shh\u2026 I\u2019m busy cataloging.",
+      "Not now, please."
+    ],
+    "smallTalkLines": [
+      "Good evening.",
+      "Hello there."
+    ]
+  },
+  "greetings": {
+    "work": "Welcome to the library. Please keep your voice down.",
+    "casual": "Nice to see you outside the stacks.",
+    "home": "Sit down, I\u2019ll make some tea."
+  },
+  "sexuality": {
+    "orientation": "lesbian",
+    "experience": "Has had a few serious relationships with women, tends to be very private about them.",
+    "preferences": [
+      "deep emotional bonds",
+      "quiet nights in",
+      "reading together"
+    ],
+    "kinks": [
+      "roleplay based on literature",
+      "teasing through whispered words",
+      "sensual slow burn"
+    ],
+    "limits": [
+      "no rough handling",
+      "no public exposure"
+    ],
+    "discovery": "Rin only reveals her sexuality and preferences after trust and romance reach a high threshold."
+  }
+}

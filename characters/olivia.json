@@ -1,0 +1,85 @@
+{
+  "id": "olivia",
+  "name": "Dr. Olivia Hartley",
+  "role": "Clinical Psychologist",
+  "location": "City",
+  "avatar": "images/dr_olivia_hartley.png",
+  "talkLimit": 5,
+  "persona": "Warm, perceptive, and incisive; balances compassion with challenging questions.",
+  "appearance": {
+    "height": "5ft5in",
+    "weight": "135 lbs",
+    "hair": "Chestnut curls, a bit messy",
+    "eyes": "Hazel",
+    "style": "Tailored but comfortable; understated jewelry"
+  },
+  "traits": [
+    "Observant",
+    "Analytical",
+    "Compassionate",
+    "Intuitive"
+  ],
+  "secrets": [
+    "Fascinated by psychological true-crime cases.",
+    "Occasional impostor syndrome despite success."
+  ],
+  "schedule": [
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slots": [
+        "afternoon",
+        "evening"
+      ],
+      "location": "City"
+    },
+    {
+      "days": [
+        6
+      ],
+      "slots": [
+        "afternoon"
+      ],
+      "location": "Library"
+    }
+  ],
+  "friendship": {
+    "level": 0,
+    "max": 100
+  },
+  "romance": {
+    "level": 0,
+    "max": 100
+  },
+  "intro_required": true,
+  "chat_behavior": {
+    "minTalkLevel": 20,
+    "busyLines": [
+      "I\u2019m between sessions\u2014keep it brief.",
+      "Notes first, talk after."
+    ],
+    "smallTalkLines": [
+      "Curious what you\u2019re not saying.",
+      "You look preoccupied."
+    ]
+  },
+  "greetings": {
+    "work": "Take a seat. What\u2019s on your mind?",
+    "casual": "I was just finishing a chapter\u2014join me?"
+  },
+  "preferences": {
+    "connection": [
+      "deep conversation",
+      "quiet evenings",
+      "mutual trust"
+    ],
+    "limits": [
+      "no professional boundary issues"
+    ]
+  }
+}

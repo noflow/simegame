@@ -1,0 +1,135 @@
+{
+  "id": "maya",
+  "name": "Maya",
+  "role": "Barista",
+  "location": "Coffee Shop",
+  "avatar": "images/maya.png",
+  "talkLimit": 3,
+  "persona": "Maya is a 23-year-old barista who takes pride in her latte art. She is friendly but has a thoughtful, introspective side. She dreams of being an artist and spends free time sketching. While outgoing at work, she is more reserved at home.",
+  "appearance": {
+    "height": "5ft4in",
+    "weight": "112 lbs",
+    "hair": "Dark brown with caramel highlights, shoulder length, wavy",
+    "eyes": "Green",
+    "style": "Barista uniform at work, comfy oversized sweaters at home"
+  },
+  "traits": [
+    "Creative",
+    "Hard-working",
+    "Secretly romantic",
+    "Introverted outside of work"
+  ],
+  "secrets": [
+    "Writes poetry in her private journal.",
+    "Afraid of disappointing her parents.",
+    "Has a quiet crush on someone."
+  ],
+  "schedule": [
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "slots": [
+        "morning",
+        "lunch",
+        "afternoon"
+      ],
+      "location": "Coffee Shop"
+    },
+    {
+      "days": [
+        6,
+        7
+      ],
+      "slots": [
+        "morning",
+        "afternoon"
+      ],
+      "location": "Park"
+    },
+    {
+      "days": [
+        6,
+        7
+      ],
+      "slots": [
+        "evening"
+      ],
+      "location": "Mall"
+    },
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "slots": [
+        "evening",
+        "night",
+        "early_morning"
+      ],
+      "location": "Maya's Apartment"
+    }
+  ],
+  "friendship": {
+    "level": 0,
+    "max": 100
+  },
+  "romance": {
+    "level": 0,
+    "max": 100
+  },
+  "intro_required": true,
+  "fetishes": [
+    "coffee aroma",
+    "tattoos"
+  ],
+  "chat_behavior": {
+    "minTalkLevel": 20,
+    "busyLines": [
+      "Sorry, I\u2019m busy right now.",
+      "Can we talk later? I\u2019ve got things to do."
+    ],
+    "smallTalkLines": [
+      "Hey\u2026 the weather\u2019s nice today.",
+      "Hi there. Everything okay?"
+    ]
+  },
+  "greetings": {
+    "work": "Hello, welcome to the Coffee Shop! What can I get started for you?",
+    "casual": "Oh hey, good to see you.",
+    "home": "Hey, make yourself comfortable."
+  },
+  "invite_required": {
+    "location": "Maya's Apartment",
+    "condition": "friendship>=30",
+    "invite_line": "You\u2019ve been a great friend. Why don\u2019t you come over to my apartment sometime?"
+  },
+  "sexuality": {
+    "orientation": "bisexual",
+    "experience": "Has dated both men and women casually, but never had a serious long-term partner.",
+    "preferences": [
+      "slow build-up of trust",
+      "romantic gestures",
+      "affectionate touch"
+    ],
+    "kinks": [
+      "praise kink",
+      "gentle dominance",
+      "experimenting with roleplay"
+    ],
+    "limits": [
+      "no humiliation",
+      "no heavy pain play"
+    ],
+    "discovery": "Maya only shares these once she fully trusts someone, revealing them one at a time."
+  }
+}

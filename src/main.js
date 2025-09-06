@@ -334,7 +334,6 @@ addEventListener('DOMContentLoaded', ()=>{
   
 // --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
 // --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
-// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
 (function bridgeCosmosKey(){
   try {
     const k1 = localStorage.getItem('llm_api_key');
@@ -390,8 +389,6 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
 
-
-// chub.ai importer and export chars (outside bridgeCosmosKey)
 // ==== Character Creation Data & Logic ====
 const APPEARANCE_OPTIONS = {
   male: {
@@ -434,7 +431,7 @@ function openCharCreateModal(e){
   // Fill inputs
   const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
   const gEls = document.querySelectorAll('input[name="ccGender"]');
-  gEls.forEach(r => { r.checked = (r.value === gender); });
+  gEls.forEach(r => { r.checked = (r.value === gender); });});
 
   // Render option grids & preview
   renderAppearanceSelectors(gender, ap);
@@ -449,8 +446,7 @@ function closeCharCreateModal(){
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden','true');
   overlay.setAttribute('inert','');
-  const __op = overlay._opener || document.getElementById('openSettings') || document.body;
-  if (__op && typeof __op.focus === 'function') __op.focus();
+  (overlay._opener || document.getElementById('openSettings') || document.body)?.focus?.();
 }
 
 function wireCharCreateEvents(){
@@ -530,43 +526,29 @@ function saveCharacterFromModal(){
 function renderPlayerCard(){
   const box = document.getElementById('sidebarInfo');
   if (!box) return;
-  const p = (window.GameState && window.GameState.state && window.GameState.state.player) || null;
+  const p = (GameState.state && GameState.state.player) || null;
+  // Remove day/time/money info
   box.innerHTML = '';
   if (!p){
     box.innerHTML = '<div class="small">No character yet.</div>';
     return;
   }
   const ap = p.appearance || {};
-  const wrapStyle = 'display:flex;flex-direction:column;gap:.5rem';
-  const title = 'font-size:.8rem;opacity:.85;letter-spacing:.02em';
-  const label = 'font-size:.75rem;opacity:.75;margin:.25rem 0 .1rem';
-  const boxStyle = 'width:100%;height:100px;border:1px solid #1b222b;border-radius:10px;background:#0f141a;display:flex;align-items:center;justify-content:center;overflow:hidden';
-  const imgStyle = 'max-width:100%;max-height:100%;object-fit:cover;display:block';
-
   box.innerHTML = `
-    <div style="${wrapStyle}">
-      <div style="${title}">Your Info</div>
-      <div class="pc-name">${p.name || 'Player'}</div>
-      <div class="small">Sex: ${p.gender || '—'}</div>
-
-      <div style="${label}">Head</div>
-      <div style="${boxStyle}">
-        ${ap.head ? `<img src="${ap.head}" alt="Head" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No head selected</div>'}
+    <div class="player-card">
+      <img src="${ap.head || ''}" alt="Head"/>
+      <div>
+        <div class="pc-name">${p.name}</div>
+        <div class="small">Sex: ${p.gender}</div>
+        
       </div>
-
-      <div style="${label}">Torso</div>
-      <div style="${boxStyle}">
-        ${ap.torso ? `<img src="${ap.torso}" alt="Torso" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No torso selected</div>'}
-      </div>
-
-      <div style="${label}">Legs</div>
-      <div style="${boxStyle}">
-        ${ap.legs ? `<img src="${ap.legs}" alt="Legs" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No legs selected</div>'}
-      </div>
+    </div>
+    <div class="row" style="margin-top:.4rem;gap:.4rem;">
+      <img src="${ap.torso || ''}" alt="Torso" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
+      <img src="${ap.legs || ''}" alt="Legs" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b"/>
     </div>
   `;
 }
-
 
 // Open creation on first run
 (function ensurePlayerAtStart(){
@@ -715,3 +697,34 @@ function renderPlayerCard(){
 document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
   if (e.target && e.target.id === 'charCreateModal') closeCharCreateModal();
 });
+
+
+// === Characters includes loader ===
+// If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
+// We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
+(async function loadIncludedCharactersOverride(){
+  const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
+  try {
+    const res = await fetch('characters.json', { cache:'no-store' });
+    if (!res.ok) return;
+    const base = await res.json();
+    const list = Array.isArray(base.characters) ? base.characters.slice() : [];
+    const includes = Array.isArray(base.includes) ? base.includes : [];
+    for (const path of includes){
+      try {
+        const r = await fetch(path, { cache:'no-store' });
+        if (!r.ok) continue;
+        const j = await r.json();
+        if (Array.isArray(j?.characters)) list.push(...j.characters);
+        else if (j && typeof j === 'object') list.push(j);
+      } catch(e){ console.warn('Include load failed:', path, e); }
+    }
+    if (list.length){
+      const merged = { ...base, characters: list };
+      localStorage.setItem(CK, JSON.stringify(merged));
+      try { window.GameLogic?.updatePresence?.(); } catch(e){}
+    }
+  } catch(e){
+    console.warn('includes loader failed:', e);
+  }
+})();
