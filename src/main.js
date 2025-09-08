@@ -327,8 +327,7 @@ async function boot(){
   }
 }
 
-addEventListener('DOMContentLoaded', async ()=>{
-  try { await loadIncludedCharactersOverride(); } catch(e) { console.warn('includes pre-load failed:', e); }
+addEventListener('DOMContentLoaded', ()=>{
   boot();
 
   
@@ -716,8 +715,7 @@ document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
 // === Characters includes loader ===
 // If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
 // We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-async function loadIncludedCharactersOverride(){
-
+(async function loadIncludedCharactersOverride(){
   const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
   try {
     const res = await fetch('characters.json', { cache:'no-store' });
@@ -742,6 +740,4 @@ async function loadIncludedCharactersOverride(){
   } catch(e){
     console.warn('includes loader failed:', e);
   }
-
-}
-
+})();
