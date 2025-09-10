@@ -746,22 +746,19 @@ async function loadIncludedCharactersOverride(){
       }
     }
 
+(() => {
+  try {
     const merged = { ...base };
-    if (list.length) merged.characters = list;
-
-    localStorage.setItem(CK, JSON.stringify(merged));
-    try { window.GameLogic?.updatePresence?.(); } catch(e){}
-  } catch(e){
-    console.warn('includes loader failed:', e);
-  }
-}
-    }
-    if (list.length){
-      const merged = { ...base, characters: list };
+    if (list.length) {
+      merged.characters = list;
       localStorage.setItem(CK, JSON.stringify(merged));
-      try { window.GameLogic?.updatePresence?.(); } catch(e){}
+      try {
+        window.GameLogic?.updatePresence?.();
+      } catch (e) {
+        console.warn('GameLogic.updatePresence failed:', e);
+      }
     }
-  } catch(e){
+  } catch (e) {
     console.warn('includes loader failed:', e);
   }
 })();
