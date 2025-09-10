@@ -716,49 +716,53 @@ document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
 // === Characters includes loader ===
 // If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
 // We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-(// === Characters includes loader ===
-// Aggregate per-file characters listed in characters.json.includes into localStorage[CHARS_KEY]
-async function loadIncludedCharactersOverride(){
-  const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
+async function loadIncludedCharactersOverride() {
+  const CK = (typeof CHARS_KEY !== "undefined") ? CHARS_KEY : "characters_json_override_v1";
   try {
-    const baseRes = await fetch('characters.json', { cache: 'no-store' });
-    if (!baseRes.ok) { console.warn('characters.json fetch failed:', baseRes.status); return; }
+    const baseRes = await fetch("characters.json", { cache: "no-store" });
+    if (!baseRes.ok) {
+      console.warn("characters.json fetch failed:", baseRes.status);
+      return;
+    }
     const base = await baseRes.json();
     const includes = Array.isArray(base.includes) ? base.includes : [];
     let list = Array.isArray(base.characters) ? base.characters.slice() : [];
 
-    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
-    for (const raw of includes){
+    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ""), location.origin);
+    for (const raw of includes) {
       try {
         const url = new URL(String(raw), baseUrl);
-        const r = await fetch(url.href, { cache: 'no-store' });
-        if (!r.ok) { console.warn('include fetch failed:', raw, r.status); continue; }
+        const r = await fetch(url.href, { cache: "no-store" });
+        if (!r.ok) {
+          console.warn("include fetch failed:", raw, r.status);
+          continue;
+        }
         const j = await r.json();
         if (Array.isArray(j?.characters)) list.push(...j.characters);
-        else if (j && typeof j === 'object') list.push(j);
-      } catch(e){ console.warn('include load error:', raw, e); }
+        else if (j && typeof j === "object") list.push(j);
+      } catch (e) {
+        console.warn("include load error:", raw, e);
+      }
     }
 
     if (!list.length) {
-      console.warn('No characters loaded from includes. Using base.characters if present.');
+      console.warn("No characters loaded from includes. Using base.characters if present.");
       if (!Array.isArray(base.characters)) {
-        console.warn('No base.characters found either.');
+        console.warn("No base.characters found either.");
       }
     }
 
-(() => {
-  try {
+    // Persist the merged characters to the local override
     const merged = { ...base };
-    if (list.length) {
-      merged.characters = list;
-      localStorage.setItem(CK, JSON.stringify(merged));
-      try {
-        window.GameLogic?.updatePresence?.();
-      } catch (e) {
-        console.warn('GameLogic.updatePresence failed:', e);
-      }
+    if (list.length) merged.characters = list;
+
+    localStorage.setItem(CK, JSON.stringify(merged));
+    try {
+      window.GameLogic?.updatePresence?.();
+    } catch (e) {
+      console.warn("GameLogic.updatePresence failed:", e);
     }
   } catch (e) {
-    console.warn('includes loader failed:', e);
+    console.warn("includes loader failed:", e);
   }
-});
+}
