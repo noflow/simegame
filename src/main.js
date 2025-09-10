@@ -761,4 +761,4 @@ async function loadIncludedCharactersOverride(){
   } catch (e) {
     console.warn('includes loader failed:', e);
   }
-})();
+});
