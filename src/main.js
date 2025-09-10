@@ -712,11 +712,7 @@ document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
   if (e.target && e.target.id === 'charCreateModal') closeCharCreateModal();
 });
 
-
 // === Characters includes loader ===
-// If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
-// We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-(// === Characters includes loader ===
 // Aggregate per-file characters listed in characters.json.includes into localStorage[CHARS_KEY]
 async function loadIncludedCharactersOverride(){
   const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
@@ -727,6 +723,7 @@ async function loadIncludedCharactersOverride(){
     const includes = Array.isArray(base.includes) ? base.includes : [];
     let list = Array.isArray(base.characters) ? base.characters.slice() : [];
 
+    // Resolve paths relative to the current directory (works under /simegame/ too)
     const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
     for (const raw of includes){
       try {
@@ -739,29 +736,11 @@ async function loadIncludedCharactersOverride(){
       } catch(e){ console.warn('include load error:', raw, e); }
     }
 
-    if (!list.length) {
-      console.warn('No characters loaded from includes. Using base.characters if present.');
-      if (!Array.isArray(base.characters)) {
-        console.warn('No base.characters found either.');
-      }
-    }
-
     const merged = { ...base };
     if (list.length) merged.characters = list;
-
     localStorage.setItem(CK, JSON.stringify(merged));
     try { window.GameLogic?.updatePresence?.(); } catch(e){}
   } catch(e){
     console.warn('includes loader failed:', e);
   }
 }
-    }
-    if (list.length){
-      const merged = { ...base, characters: list };
-      localStorage.setItem(CK, JSON.stringify(merged));
-      try { window.GameLogic?.updatePresence?.(); } catch(e){}
-    }
-  } catch(e){
-    console.warn('includes loader failed:', e);
-  }
-})();
