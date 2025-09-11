@@ -405,7 +405,6 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
 
     saveCharactersObj(charsObj);
     downloadJson(`${npc.id}.json`, npc);
-    \1
   } catch (err) {
     console.error(err);
     alert('Invalid chub.ai JSON: ' + (err?.message || err));
