@@ -740,7 +740,6 @@ function renderPlayerCard(){
   { const el = document.getElementById('charBuildGenerate'); if (el) el.addEventListener('click', CharBuild.generateCharacterFromPrompt); }
   { const el = document.getElementById('charBuildSave');      if (el) el.addEventListener('click', CharBuild.addCharacterToGame); }
 
-});
 // Close character create when clicking the backdrop
 document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
   if (e.target && e.target.id === 'charCreateModal') closeCharCreateModal();
@@ -750,7 +749,7 @@ document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
 // === Characters includes loader ===
 // If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
 // We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-(// === Characters includes loader ===
+// === Characters includes loader ===
 // Aggregate per-file characters listed in characters.json.includes into localStorage[CHARS_KEY]
 async function loadIncludedCharactersOverride(){
   const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
