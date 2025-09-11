@@ -1,11 +1,11 @@
 {
   "includes": [
-    "characters/maya.json",
     "characters/alex.json",
-    "characters/rin.json",
-    "characters/sarah.json",
-    "characters/lily.json",
     "characters/ava.json",
-    "characters/olivia.json"
+    "characters/lily.json",
+    "characters/maya.json",
+    "characters/olivia.json",
+    "characters/rin.json",
+    "characters/sarah.json"
   ]
 }

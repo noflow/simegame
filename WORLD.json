@@ -22,5 +22,8 @@
       "text": "Maya’s apartment is cozy with plants on the balcony.\n[[Back to Second Floor->Second Floor]]",
       "locked": true
     }
-  }
+  },
+  "Mom's Room": "Mom's Room. {npc:sarah}\n[[Back->Hallway]]",
+  "Sister's Room": "Sister's Room. {npc:lily}\n[[Back->Hallway]]",
+  "Kitchen": "Kitchen. {npc:sarah}\n[[Back->Hallway]]"
 }
