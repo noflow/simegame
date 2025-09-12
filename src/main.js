@@ -23,53 +23,9 @@ if (window.__GAME_BOOTED__) {
   window.__GAME_BOOTED__ = true;
 }
 
-
-// === Auto-load WORLD.json and characters.json from root, resolve includes ===
+// ---- localStorage keys for user JSON
 const WORLD_KEY = 'world_json_override_v1';
 const CHARS_KEY = 'characters_json_override_v1';
-
-async function autoLoadRoot(){
-  try{
-    // Only load if missing to avoid clobbering user overrides
-    const hasWorld = !!localStorage.getItem(WORLD_KEY);
-    const hasChars = !!localStorage.getItem(CHARS_KEY);
-    if (hasWorld && hasChars) return;
-
-    // Fetch root files
-    const [wRes, cRes] = await Promise.all([ fetch('./WORLD.json', {cache:'no-store'}), fetch('./characters.json', {cache:'no-store'}) ]);
-    if (!wRes.ok) throw new Error('WORLD.json ' + wRes.status);
-    if (!cRes.ok) throw new Error('characters.json ' + cRes.status);
-    const world = await wRes.json();
-    const base  = await cRes.json();
-
-    // Resolve includes similarly to loadIncludedCharactersOverride()
-    const includes = Array.isArray(base.includes) ? base.includes : [];
-    const list = Array.isArray(base.characters) ? base.characters.slice() : [];
-    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
-    for (const raw of includes){
-      try{
-        const url = new URL(String(raw), baseUrl);
-        const r = await fetch(url.href, {cache:'no-store'});
-        if (!r.ok) { console.warn('include fetch failed:', raw, r.status); continue; }
-        const j = await r.json();
-        if (Array.isArray(j?.characters)) list.push(...j.characters);
-        else if (j && typeof j === 'object') list.push(j);
-      }catch(e){ console.warn('include load error:', raw, e); }
-    }
-    const merged = { ...base };
-    if (list.length) merged.characters = list;
-
-    // Persist to the same keys used by boot()
-    localStorage.setItem(WORLD_KEY, JSON.stringify(world));
-    localStorage.setItem(CHARS_KEY, JSON.stringify(merged));
-  }catch(err){
-    console.warn('autoLoadRoot failed:', err);
-  }
-}
-
-// ---- localStorage keys for user JSON
-
-
 
 function setStatusBadges() {
   const w = localStorage.getItem(WORLD_KEY);
@@ -760,37 +716,27 @@ document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
 // === Characters includes loader ===
 // If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
 // We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-// === Characters includes loader ===
-// If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
-// We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-async function loadIncludedCharactersOverride() {
+(// === Characters includes loader ===
+// Aggregate per-file characters listed in characters.json.includes into localStorage[CHARS_KEY]
+async function loadIncludedCharactersOverride(){
   const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
   try {
     const baseRes = await fetch('characters.json', { cache: 'no-store' });
-    if (!baseRes.ok) {
-      console.warn('characters.json fetch failed:', baseRes.status);
-      return;
-    }
-
+    if (!baseRes.ok) { console.warn('characters.json fetch failed:', baseRes.status); return; }
     const base = await baseRes.json();
     const includes = Array.isArray(base.includes) ? base.includes : [];
     let list = Array.isArray(base.characters) ? base.characters.slice() : [];
 
     const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
-    for (const raw of includes) {
+    for (const raw of includes){
       try {
         const url = new URL(String(raw), baseUrl);
         const r = await fetch(url.href, { cache: 'no-store' });
-        if (!r.ok) {
-          console.warn('include fetch failed:', raw, r.status);
-          continue;
-        }
+        if (!r.ok) { console.warn('include fetch failed:', raw, r.status); continue; }
         const j = await r.json();
         if (Array.isArray(j?.characters)) list.push(...j.characters);
         else if (j && typeof j === 'object') list.push(j);
-      } catch (e) {
-        console.warn('include load error:', raw, e);
-      }
+      } catch(e){ console.warn('include load error:', raw, e); }
     }
 
     if (!list.length) {
@@ -800,64 +746,28 @@ async function loadIncludedCharactersOverride() {
       }
     }
 
+(() => {
+  try {
     const merged = { ...base };
-    if (list.length) merged.characters = list;
-
-    localStorage.setItem(CK, JSON.stringify(merged));
-    try {
-      window.GameLogic?.updatePresence?.();
-    } catch (e) {
-      console.warn('GameLogic.updatePresence failed:', e);
+    if (list.length) {
+      merged.characters = list;
+      localStorage.setItem(CK, JSON.stringify(merged));
+      try {
+        window.GameLogic?.updatePresence?.();
+      } catch (e) {
+        console.warn('GameLogic.updatePresence failed:', e);
+      }
     }
   } catch (e) {
     console.warn('includes loader failed:', e);
   }
-}
-
-
-// === UI: Load indicators for WORLD.json & characters.json ===
-function updateLoadIndicators(){
-  try{
-    const wStr = localStorage.getItem(typeof WORLD_KEY !== 'undefined' ? WORLD_KEY : 'world_json_override_v1');
-    const cStr = localStorage.getItem(typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1');
-    let wOk = false, cOk = false;
-    try{
-      const w = wStr ? JSON.parse(wStr) : null;
-      wOk = !!(w && Array.isArray(w.passages) && w.passages.length);
-    }catch{}
-    try{
-      const c = cStr ? JSON.parse(cStr) : null;
-      cOk = !!(c && Array.isArray(c.characters) && c.characters.length);
-    }catch{}
-    const wl = document.getElementById('worldLight');
-    const cl = document.getElementById('charsLight');
-    if (wl){ wl.classList.toggle('ok', wOk); wl.title = wOk ? 'Loaded' : 'Not loaded'; }
-    if (cl){ cl.classList.toggle('ok', cOk); cl.title = cOk ? 'Loaded' : 'Not loaded'; }
-  }catch(e){ console.warn('updateLoadIndicators failed:', e); }
-}
-
-// Run on ready (a short poll to catch async loads)
-document.addEventListener('DOMContentLoaded', ()=>{
-  let tries = 0;
-  const t = setInterval(()=>{
-    updateLoadIndicators();
-    if (++tries > 20) clearInterval(t); // ~5s
-  }, 250);
 });
 
-// Try to hook common loaders so lights flip immediately after they finish
-(function(){
-  const patch = (name)=>{
-    const fn = window[name];
-    if (typeof fn === 'function'){
-      window[name] = async function(){
-        const r = await fn.apply(this, arguments);
-        try{ updateLoadIndicators(); }catch{}
-        return r;
-      };
-    }
-  };
-  patch('autoBootFromRoot');
-  patch('autoLoadRoot');
-  patch('loadIncludedCharactersOverride');
-})();
+function hasPassages(w){
+  if (!w) return false;
+  const p = w.passages;
+  if (Array.isArray(p)) return p.length > 0;
+  if (p && typeof p === 'object') return Object.keys(p).length > 0;
+  return false;
+}
+
