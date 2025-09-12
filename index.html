@@ -71,7 +71,12 @@
 
 /* (safety) ensure clicks/typing aren't blocked */
     #chatModal, #chatModal * { pointer-events: auto; }
-  </style>
+  
+  .status-row{display:flex;align-items:center;gap:.5rem;margin:.25rem 0}
+  .status-row .label{min-width:10rem}
+  .light-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#d33;box-shadow:0 0 0 1px rgba(0,0,0,.25);}
+  .light-dot.ok{background:#17c964;}
+</style>
 </head>
 <body>
   <header>
@@ -146,7 +151,54 @@
     </aside>
   </main>
 
-  <!-- Known Characters Modal -->
+  
+  <!-- Character Creation Modal -->
+  <div id="charCreateModal" class="modal-overlay" aria-hidden="true" style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:2200">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="charCreateTitle" style="width:min(920px,95vw);background:var(--panel);border:1px solid #1b222b;border-radius:14px;overflow:hidden">
+      <header style="display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;border-bottom:1px solid #1b222b;background:#0f141a">
+        <h3 id="charCreateTitle" style="margin:0;font-size:.98rem">Create Your Character</h3>
+        <span class="small" style="opacity:.85;margin-left:.5rem;">You're 18, just finished high school, living with Mom & Sister.</span>
+        <span style="margin-left:auto"></span>
+        <button class="close" id="charCreateCloseBtn" title="Close" style="margin-left:auto;background:#222;border:1px solid #2a3441;border-radius:8px;padding:.25rem .5rem;cursor:pointer">×</button>
+      </header>
+      <div class="body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;min-height:520px">
+        <div>
+          <label class="small">Name
+            <input id="ccName" type="text" class="btn-ghost" placeholder="Your name…" style="width:100%"/>
+          </label>
+          <div class="divider"></div>
+          <div class="small" style="margin-bottom:.35rem;">Sex / Gender</div>
+          <div class="row">
+            <label class="row"><input type="radio" name="ccGender" value="male" checked> Male</label>
+            <label class="row"><input type="radio" name="ccGender" value="female"> Female</label>
+            <label class="row"><input type="radio" name="ccGender" value="transgender"> Transgender</label>
+          </div>
+          <div class="divider"></div>
+
+          <div class="small" style="margin-bottom:.35rem;">Preview</div>
+          <div class="row" style="align-items:flex-start;gap:.6rem;">
+            <img id="ccPreviewHead"  alt="Head"  style="width:80px;height:80px;object-fit:cover;border:1px solid #1b222b;border-radius:10px;background:#0f141a"/>
+            <img id="ccPreviewTorso" alt="Torso" style="width:80px;height:80px;object-fit:cover;border:1px solid #1b222b;border-radius:10px;background:#0f141a"/>
+            <img id="ccPreviewLegs"  alt="Legs"  style="width:80px;height:80px;object-fit:cover;border:1px solid #1b222b;border-radius:10px;background:#0f141a"/>
+          </div>
+          <div class="row" style="margin-top:.8rem;gap:.5rem;">
+            <button id="ccSave" class="btn-primary">Save Character</button>
+          </div>
+        </div>
+        <div>
+          <div class="small" style="margin-bottom:.35rem;">Choose Head</div>
+          <div id="ccHead" class="row" style="gap:.5rem;flex-wrap:wrap"></div>
+          <div class="divider"></div>
+          <div class="small" style="margin-bottom:.35rem;">Choose Torso</div>
+          <div id="ccTorso" class="row" style="gap:.5rem;flex-wrap:wrap"></div>
+          <div class="divider"></div>
+          <div class="small" style="margin-bottom:.35rem;">Choose Legs</div>
+          <div id="ccLegs" class="row" style="gap:.5rem;flex-wrap:wrap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- Known Characters Modal -->
   <div id="knownModal" class="modal-overlay" aria-hidden="true" style="position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:2000">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="knownTitle" style="width:min(900px,95vw);background:var(--panel);border:1px solid #1b222b;border-radius:14px;overflow:hidden">
       <header style="display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;border-bottom:1px solid #1b222b;background:#0f141a">
@@ -188,18 +240,17 @@
 
         
 <h3 class="small" style="margin:.25rem 0 .5rem 0;">World & Characters</h3>
-<p class="small" style="opacity:.8; margin:.25rem 0 .75rem 0;">
-  <code>WORLD.json</code> and <code>characters.json</code> are auto-loaded from the site root on startup.
+<div class="status-row">
+  <div class="label">WORLD.json</div>
+  <div id="worldLight" class="light-dot" title="World load status"></div>
+</div>
+<div class="status-row">
+  <div class="label">characters.json</div>
+  <div id="charsLight" class="light-dot" title="Characters load status"></div>
+</div>
+<p class="small" style="opacity:.8; margin:.5rem 0 .25rem 0;">
   Individual NPC files are loaded via <code>characters.json → includes</code>.
 </p>
-<div class="row" style="gap:.75rem; flex-wrap:wrap">
-  <label class="btn-ghost" for="chubFile" title="Load a chub.ai character JSON">Load chub.ai character.json</label>
-  <input id="chubFile" type="file" accept="application/json" style="display:none"/>
-</div>
-<p class="small" id="dataStatus" style="opacity:.8;margin:.25rem 0 0 0;">
-  Using: <span id="worldSource">root WORLD.json</span> · <span id="charsSource">root characters.json</span>
-</p>
-
 <div class="divider"></div>
 
 
@@ -250,7 +301,7 @@
     </div>
   </div>
 
-<link rel="icon" href="data:," />
+<link rel="icon" href="./favicon.ico"> 
 <script src="./src/cosmos.js"></script>
 <script type="module" src="./src/main.js?v=21"></script> <!-- bump v to clear cache -->
 </body>

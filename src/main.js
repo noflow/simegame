@@ -813,3 +813,51 @@ async function loadIncludedCharactersOverride() {
     console.warn('includes loader failed:', e);
   }
 }
+
+
+// === UI: Load indicators for WORLD.json & characters.json ===
+function updateLoadIndicators(){
+  try{
+    const wStr = localStorage.getItem(typeof WORLD_KEY !== 'undefined' ? WORLD_KEY : 'world_json_override_v1');
+    const cStr = localStorage.getItem(typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1');
+    let wOk = false, cOk = false;
+    try{
+      const w = wStr ? JSON.parse(wStr) : null;
+      wOk = !!(w && Array.isArray(w.passages) && w.passages.length);
+    }catch{}
+    try{
+      const c = cStr ? JSON.parse(cStr) : null;
+      cOk = !!(c && Array.isArray(c.characters) && c.characters.length);
+    }catch{}
+    const wl = document.getElementById('worldLight');
+    const cl = document.getElementById('charsLight');
+    if (wl){ wl.classList.toggle('ok', wOk); wl.title = wOk ? 'Loaded' : 'Not loaded'; }
+    if (cl){ cl.classList.toggle('ok', cOk); cl.title = cOk ? 'Loaded' : 'Not loaded'; }
+  }catch(e){ console.warn('updateLoadIndicators failed:', e); }
+}
+
+// Run on ready (a short poll to catch async loads)
+document.addEventListener('DOMContentLoaded', ()=>{
+  let tries = 0;
+  const t = setInterval(()=>{
+    updateLoadIndicators();
+    if (++tries > 20) clearInterval(t); // ~5s
+  }, 250);
+});
+
+// Try to hook common loaders so lights flip immediately after they finish
+(function(){
+  const patch = (name)=>{
+    const fn = window[name];
+    if (typeof fn === 'function'){
+      window[name] = async function(){
+        const r = await fn.apply(this, arguments);
+        try{ updateLoadIndicators(); }catch{}
+        return r;
+      };
+    }
+  };
+  patch('autoBootFromRoot');
+  patch('autoLoadRoot');
+  patch('loadIncludedCharactersOverride');
+})();
