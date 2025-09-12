@@ -23,6 +23,50 @@ if (window.__GAME_BOOTED__) {
   window.__GAME_BOOTED__ = true;
 }
 
+
+// === Auto-load WORLD.json and characters.json from root, resolve includes ===
+const WORLD_KEY = 'world_json_override_v1';
+const CHARS_KEY = 'characters_json_override_v1';
+
+async function autoLoadRoot(){
+  try{
+    // Only load if missing to avoid clobbering user overrides
+    const hasWorld = !!localStorage.getItem(WORLD_KEY);
+    const hasChars = !!localStorage.getItem(CHARS_KEY);
+    if (hasWorld && hasChars) return;
+
+    // Fetch root files
+    const [wRes, cRes] = await Promise.all([ fetch('./WORLD.json', {cache:'no-store'}), fetch('./characters.json', {cache:'no-store'}) ]);
+    if (!wRes.ok) throw new Error('WORLD.json ' + wRes.status);
+    if (!cRes.ok) throw new Error('characters.json ' + cRes.status);
+    const world = await wRes.json();
+    const base  = await cRes.json();
+
+    // Resolve includes similarly to loadIncludedCharactersOverride()
+    const includes = Array.isArray(base.includes) ? base.includes : [];
+    const list = Array.isArray(base.characters) ? base.characters.slice() : [];
+    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
+    for (const raw of includes){
+      try{
+        const url = new URL(String(raw), baseUrl);
+        const r = await fetch(url.href, {cache:'no-store'});
+        if (!r.ok) { console.warn('include fetch failed:', raw, r.status); continue; }
+        const j = await r.json();
+        if (Array.isArray(j?.characters)) list.push(...j.characters);
+        else if (j && typeof j === 'object') list.push(j);
+      }catch(e){ console.warn('include load error:', raw, e); }
+    }
+    const merged = { ...base };
+    if (list.length) merged.characters = list;
+
+    // Persist to the same keys used by boot()
+    localStorage.setItem(WORLD_KEY, JSON.stringify(world));
+    localStorage.setItem(CHARS_KEY, JSON.stringify(merged));
+  }catch(err){
+    console.warn('autoLoadRoot failed:', err);
+  }
+}
+
 // ---- localStorage keys for user JSON
 const WORLD_KEY = 'world_json_override_v1';
 const CHARS_KEY = 'characters_json_override_v1';
@@ -716,8 +760,7 @@ document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
 // === Characters includes loader ===
 // If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
 // We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-
-// === Characters includes loader ===
+(// === Characters includes loader ===
 // Aggregate per-file characters listed in characters.json.includes into localStorage[CHARS_KEY]
 async function loadIncludedCharactersOverride(){
   const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
@@ -747,14 +790,19 @@ async function loadIncludedCharactersOverride(){
       }
     }
 
+(() => {
+  try {
     const merged = { ...base };
-    if (list.length) merged.characters = list;
-
-    localStorage.setItem(CK, JSON.stringify(merged));
-    try { window.GameLogic?.updatePresence?.(); } catch (e) {
-      console.warn('GameLogic.updatePresence failed:', e);
+    if (list.length) {
+      merged.characters = list;
+      localStorage.setItem(CK, JSON.stringify(merged));
+      try {
+        window.GameLogic?.updatePresence?.();
+      } catch (e) {
+        console.warn('GameLogic.updatePresence failed:', e);
+      }
     }
   } catch (e) {
     console.warn('includes loader failed:', e);
   }
-}
+});
