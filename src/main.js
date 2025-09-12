@@ -68,8 +68,8 @@ async function autoLoadRoot(){
 }
 
 // ---- localStorage keys for user JSON
-const WORLD_KEY = 'world_json_override_v1';
-const CHARS_KEY = 'characters_json_override_v1';
+
+
 
 function setStatusBadges() {
   const w = localStorage.getItem(WORLD_KEY);
