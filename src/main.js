@@ -23,9 +23,53 @@ if (window.__GAME_BOOTED__) {
   window.__GAME_BOOTED__ = true;
 }
 
-// ---- localStorage keys for user JSON
+
+// === Auto-load WORLD.json and characters.json from root, resolve includes ===
 const WORLD_KEY = 'world_json_override_v1';
 const CHARS_KEY = 'characters_json_override_v1';
+
+async function autoLoadRoot(){
+  try{
+    // Only load if missing to avoid clobbering user overrides
+    const hasWorld = !!localStorage.getItem(WORLD_KEY);
+    const hasChars = !!localStorage.getItem(CHARS_KEY);
+    if (hasWorld && hasChars) return;
+
+    // Fetch root files
+    const [wRes, cRes] = await Promise.all([ fetch('./WORLD.json', {cache:'no-store'}), fetch('./characters.json', {cache:'no-store'}) ]);
+    if (!wRes.ok) throw new Error('WORLD.json ' + wRes.status);
+    if (!cRes.ok) throw new Error('characters.json ' + cRes.status);
+    const world = await wRes.json();
+    const base  = await cRes.json();
+
+    // Resolve includes similarly to loadIncludedCharactersOverride()
+    const includes = Array.isArray(base.includes) ? base.includes : [];
+    const list = Array.isArray(base.characters) ? base.characters.slice() : [];
+    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
+    for (const raw of includes){
+      try{
+        const url = new URL(String(raw), baseUrl);
+        const r = await fetch(url.href, {cache:'no-store'});
+        if (!r.ok) { console.warn('include fetch failed:', raw, r.status); continue; }
+        const j = await r.json();
+        if (Array.isArray(j?.characters)) list.push(...j.characters);
+        else if (j && typeof j === 'object') list.push(j);
+      }catch(e){ console.warn('include load error:', raw, e); }
+    }
+    const merged = { ...base };
+    if (list.length) merged.characters = list;
+
+    // Persist to the same keys used by boot()
+    localStorage.setItem(WORLD_KEY, JSON.stringify(world));
+    localStorage.setItem(CHARS_KEY, JSON.stringify(merged));
+  }catch(err){
+    console.warn('autoLoadRoot failed:', err);
+  }
+}
+
+// ---- localStorage keys for user JSON
+
+
 
 function setStatusBadges() {
   const w = localStorage.getItem(WORLD_KEY);
@@ -716,7 +760,6 @@ document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
 // === Characters includes loader ===
 // If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
 // We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-
 // === Characters includes loader ===
 // If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
 // We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
@@ -728,6 +771,7 @@ async function loadIncludedCharactersOverride() {
       console.warn('characters.json fetch failed:', baseRes.status);
       return;
     }
+
     const base = await baseRes.json();
     const includes = Array.isArray(base.includes) ? base.includes : [];
     let list = Array.isArray(base.characters) ? base.characters.slice() : [];
@@ -760,11 +804,136 @@ async function loadIncludedCharactersOverride() {
     if (list.length) merged.characters = list;
 
     localStorage.setItem(CK, JSON.stringify(merged));
-    try { window.GameLogic?.updatePresence?.(); } catch (e) {
+    try {
+      window.GameLogic?.updatePresence?.();
+    } catch (e) {
       console.warn('GameLogic.updatePresence failed:', e);
     }
   } catch (e) {
     console.warn('includes loader failed:', e);
   }
+}
+// === Root loader probe (robust) ===
+async function probeRootAndStore(){
+  const WORLD_KEY_FALLBACK = 'world_json_override_v1';
+  const CHARS_KEY_FALLBACK = 'characters_json_override_v1';
+  const WK = (typeof WORLD_KEY !== 'undefined') ? WORLD_KEY : WORLD_KEY_FALLBACK;
+  const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : CHARS_KEY_FALLBACK;
+  window.BootDebug = window.BootDebug || {};
+  window.BootDebug.probe = { world:{}, characters:{}, includes:[] };
+
+  // Fetch WORLD.json
+  const worldHref = new URL('./WORLD.json', location.href).href;
+  let world = null;
+  try{
+    const r = await fetch(worldHref, { cache:'no-store' });
+    window.BootDebug.probe.world.status = r.status;
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    world = await r.json();
+    window.BootDebug.probe.world.ok = true;
+  }catch(e){
+    window.BootDebug.probe.world.ok = false;
+    window.BootDebug.probe.world.error = String(e && e.message || e);
+  }
+  if (world) {
+    try { localStorage.setItem(WK, JSON.stringify(world)); } catch{}
+  }
+
+  // Fetch characters.json + resolve includes
+  const charsHref = new URL('./characters.json', location.href).href;
+  let merged = null, includes = [];
+  try{
+    const r = await fetch(charsHref, { cache:'no-store' });
+    window.BootDebug.probe.characters.status = r.status;
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const base = await r.json();
+    includes = Array.isArray(base.includes) ? base.includes : [];
+    let list = Array.isArray(base.characters) ? base.characters.slice() : [];
+    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
+    for (const raw of includes) {
+      const rec = { path:String(raw), ok:false, status:0, added:0 };
+      try{
+        const url = new URL(String(raw), baseUrl);
+        const rr = await fetch(url.href, { cache:'no-store' });
+        rec.status = rr.status;
+        if (!rr.ok) throw new Error('HTTP ' + rr.status);
+        const j = await rr.json();
+        if (Array.isArray(j?.characters)) { list.push(...j.characters); rec.added = j.characters.length; }
+        else if (j && typeof j === 'object') { list.push(j); rec.added = 1; }
+        rec.ok = true;
+      }catch(e){
+        rec.error = String(e && e.message || e);
+      }
+      window.BootDebug.probe.includes.push(rec);
+    }
+    merged = { ...base };
+    if (list.length) merged.characters = list;
+    window.BootDebug.probe.characters.ok = true;
+  }catch(e){
+    window.BootDebug.probe.characters.ok = false;
+    window.BootDebug.probe.characters.error = String(e && e.message || e);
+  }
+  if (merged) {
+    try { localStorage.setItem(CK, JSON.stringify(merged)); } catch{}
+  }
+
+  // Flip lights
+  try { updateLoadIndicators(); } catch{}
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try { await probeRootAndStore(); } catch(e){ console.warn('probeRootAndStore error:', e); }
+});
+
+
+function updateLoadIndicators(){
+  try{
+    const WK = (typeof WORLD_KEY !== 'undefined') ? WORLD_KEY : 'world_json_override_v1';
+    const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
+    let wOk = false, cOk = false;
+    let wTitle = 'Not loaded', cTitle = 'Not loaded';
+
+    try{
+      const wStr = localStorage.getItem(WK);
+      const w = wStr ? JSON.parse(wStr) : null;
+      if (w) {
+        const p = w.passages;
+        wOk = Array.isArray(p) ? p.length>0 : (p && typeof p==='object' ? Object.keys(p).length>0 : false);
+        wTitle = wOk ? 'Loaded' : 'No passages';
+      }
+    }catch{}
+
+    try{
+      const cStr = localStorage.getItem(CK);
+      const c = cStr ? JSON.parse(cStr) : null;
+      const arr = Array.isArray(c?.characters) ? c.characters : [];
+      cOk = arr.length > 0;
+      cTitle = cOk ? `Loaded (${arr.length})` : 'No characters';
+    }catch{}
+
+    const wl = document.getElementById('worldLight');
+    const cl = document.getElementById('charsLight');
+    const il = document.getElementById('includesLight');
+
+    if (wl){ wl.classList.toggle('ok', wOk); wl.title = wTitle; }
+    if (cl){ cl.classList.toggle('ok', cOk); cl.title = cTitle; }
+
+    // Includes light: green if all ok, amber if any failed, red if none
+    let includeState = 'none', includeTitle = 'No includes fetched';
+    try{
+      const inc = (window.BootDebug && window.BootDebug.probe && Array.isArray(window.BootDebug.probe.includes)) ? window.BootDebug.probe.includes : [];
+      if (inc.length){
+        const anyFail = inc.some(x => !x.ok);
+        includeState = anyFail ? 'warn' : 'ok';
+        includeTitle = anyFail ? 'Some includes failed' : 'All includes loaded';
+      }
+    }catch{}
+    if (il){
+      il.classList.remove('ok','warn');
+      if (includeState==='ok') il.classList.add('ok');
+      else if (includeState==='warn') il.classList.add('warn');
+      il.title = includeTitle;
+    }
+  }catch(e){ console.warn('updateLoadIndicators failed:', e); }
 }
 

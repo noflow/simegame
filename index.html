@@ -76,6 +76,7 @@
   .status-row .label{min-width:10rem}
   .light-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#d33;box-shadow:0 0 0 1px rgba(0,0,0,.25);}
   .light-dot.ok{background:#17c964;}
+  .light-dot.warn{background:#f5a623;}
 </style>
 </head>
 <body>
@@ -238,21 +239,24 @@
 
         <div class="divider"></div>
 
-        
-<h3 class="small" style="margin:.25rem 0 .5rem 0;">World & Characters</h3>
-<div class="status-row">
-  <div class="label">WORLD.json</div>
-  <div id="worldLight" class="light-dot" title="World load status"></div>
-</div>
-<div class="status-row">
-  <div class="label">characters.json</div>
-  <div id="charsLight" class="light-dot" title="Characters load status"></div>
-</div>
-<p class="small" style="opacity:.8; margin:.5rem 0 .25rem 0;">
-  Individual NPC files are loaded via <code>characters.json → includes</code>.
-</p>
-<div class="divider"></div>
+        <h3 class="small" style="margin:.25rem 0 .5rem 0;">World & Characters</h3>
+        <div class="row" style="gap:.75rem; flex-wrap:wrap">
+          <label class="btn-ghost" for="mapFile" title="Load a world map JSON">Load map.json</label>
+          <input id="mapFile" type="file" accept="application/json" style="display:none"/>
 
+          <label class="btn-ghost" for="charsFile" title="Load a characters JSON">Load characters.json</label>
+          <input id="charsFile" type="file" accept="application/json" style="display:none"/>
+
+          <button id="clearOverrides" class="btn-ghost" title="Use the built-in JSON again" disabled>Use built-in data</button>
+        
+          <label class="btn-ghost" for="chubFile" title="Load a chub.ai character JSON">Load chub.ai character.json</label>
+          <input id="chubFile" type="file" accept="application/json" style="display:none"/>
+        </div>
+        <p class="small" id="dataStatus" style="opacity:.8;margin:.25rem 0 0 0;">
+          Using: <span id="worldSource">none</span> · <span id="charsSource">none</span>
+        </p>
+
+        <div class="divider"></div>
 
         <h3 class="small" style="margin:.25rem 0 .5rem 0;">Game</h3>
         <div class="row" style="gap:.5rem;flex-wrap:wrap">
