@@ -26,15 +26,49 @@ if (window.__GAME_BOOTED__) {
 // ---- localStorage keys for user JSON
 const WORLD_KEY = 'world_json_override_v1';
 const CHARS_KEY = 'characters_json_override_v1';
+// === Auto-boot from root WORLD.json + characters.json (with includes) ===
+async function __fetchJson(url){ const r = await fetch(url, { cache: 'no-store' }); if(!r.ok) throw new Error(url + ' ' + r.status); return r.json(); }
+function __dedupeById(list){ const seen=new Set(); return (list||[]).filter(c=>{const id=(c?.id||c?.name||'')+''; if(!id||seen.has(id)) return false; seen.add(id); return true;}); }
+async function __resolveIncludes(base){
+  const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
+  const out = Array.isArray(base.characters) ? base.characters.slice() : [];
+  for(const raw of (Array.isArray(base.includes)?base.includes:[])){
+    try{
+      const url = new URL(String(raw), baseUrl);
+      const j = await __fetchJson(url.href);
+      if (Array.isArray(j?.characters)) out.push(...j.characters);
+      else if (j && typeof j === 'object') out.push(j);
+    }catch(e){ console.warn('include load error:', raw, e); }
+  }
+  return __dedupeById(out);
+}
+async function autoBootFromRoot(){
+  try{
+    const [world, charsBase] = await Promise.all([ __fetchJson('./WORLD.json'), __fetchJson('./characters.json') ]);
+    const mergedList = await __resolveIncludes(charsBase);
+    const merged = { ...charsBase, characters: mergedList };
+    localStorage.setItem(WORLD_KEY, JSON.stringify(world));
+    localStorage.setItem(CHARS_KEY, JSON.stringify(merged));
+    localStorage.setItem('boot_source', 'root');
+    window.GameData = { WORLD: world, CHARACTERS: merged };
+    if (typeof setGameData === 'function') setGameData(world, merged);
+  }catch(e){
+    console.warn('Auto-boot failed:', e);
+  }
+}
 
-function setStatusBadges() {
+
+
+function setStatusBadges(){
   const w = localStorage.getItem(WORLD_KEY);
   const c = localStorage.getItem(CHARS_KEY);
+  const srcType = localStorage.getItem('boot_source');
   const wEl = document.getElementById('worldSource');
   const cEl = document.getElementById('charsSource');
-  if (wEl) wEl.textContent = w ? 'custom map.json' : 'none';
-  if (cEl) cEl.textContent = c ? 'custom characters.json' : 'none';
+  if (wEl) wEl.textContent = w ? (srcType==='root' ? 'root WORLD.json' : 'custom map.json') : 'none';
+  if (cEl) cEl.textContent = c ? (srcType==='root' ? 'root characters.json' : 'custom characters.json') : 'none';
 }
+
 
 async function readFileAsText(file) {
   return await new Promise((res, rej) => {
@@ -300,26 +334,31 @@ async function boot(){
     { const el = document.getElementById('day');  if (el) el.textContent  = GameState.state.day; }
     { const el = document.getElementById('time'); if (el) el.textContent = GameConst.TIME_SLOTS[GameState.state.timeIndex]; }
 
-    // Load user overrides (required now; no built-in JSON)
+    // Load user overrides; if missing, try root files first
     let worldObj = null, charsObj = null;
     try {
       const wStr = localStorage.getItem(WORLD_KEY);
       const cStr = localStorage.getItem(CHARS_KEY);
       if (wStr) worldObj = JSON.parse(wStr);
       if (cStr) charsObj = JSON.parse(cStr);
-    } catch (e) {
-      console.warn('Bad override JSON; clearing', e);
-      localStorage.removeItem(WORLD_KEY);
-      localStorage.removeItem(CHARS_KEY);
-    }
+    } catch(e) { console.warn('Local overrides parse failed:', e); }
 
-    // If both present, start; otherwise prompt user to load files
     if (worldObj && charsObj) {
       window.GameData = { WORLD: worldObj, CHARACTERS: charsObj };
       setGameData(worldObj, charsObj);
     } else {
-      window.GameData = { WORLD: null, CHARACTERS: null };
-      openSettingsModal();
+      await autoBootFromRoot();
+      // re-check
+      try {
+        worldObj = JSON.parse(localStorage.getItem(WORLD_KEY)||'null');
+        charsObj = JSON.parse(localStorage.getItem(CHARS_KEY)||'null');
+      } catch(e){}
+      if (worldObj && charsObj) {
+        window.GameData = { WORLD: worldObj, CHARACTERS: charsObj };
+        setGameData(worldObj, charsObj);
+      } else {
+        openSettingsModal();
+      }
     }
   } catch (err) {
     console.error(err);
@@ -327,13 +366,7 @@ async function boot(){
   }
 }
 
-addEventListener('DOMContentLoaded', async ()=>{
-  try { await loadIncludedCharactersOverride(); } catch(e) { console.warn('includes pre-load failed:', e); }
-  boot();
-
-  
-  
-// --- Bridge: keep #apiKey (llm_api_key) and Cosmos (cosmos.apiKey) in sync ---
+addEventListener('DOMContentLoaded', async ()=>{ try { await loadIncludedCharactersOverride(); } catch(e) { console.warn('includes pre-load failed:', e); } await boot(); });
 (function bridgeCosmosKey(){
   try {
     const k1 = localStorage.getItem('llm_api_key');
