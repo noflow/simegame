@@ -23,53 +23,9 @@ if (window.__GAME_BOOTED__) {
   window.__GAME_BOOTED__ = true;
 }
 
-
-// === Auto-load WORLD.json and characters.json from root, resolve includes ===
+// ---- localStorage keys for user JSON
 const WORLD_KEY = 'world_json_override_v1';
 const CHARS_KEY = 'characters_json_override_v1';
-
-async function autoLoadRoot(){
-  try{
-    // Only load if missing to avoid clobbering user overrides
-    const hasWorld = !!localStorage.getItem(WORLD_KEY);
-    const hasChars = !!localStorage.getItem(CHARS_KEY);
-    if (hasWorld && hasChars) return;
-
-    // Fetch root files
-    const [wRes, cRes] = await Promise.all([ fetch('./WORLD.json', {cache:'no-store'}), fetch('./characters.json', {cache:'no-store'}) ]);
-    if (!wRes.ok) throw new Error('WORLD.json ' + wRes.status);
-    if (!cRes.ok) throw new Error('characters.json ' + cRes.status);
-    const world = await wRes.json();
-    const base  = await cRes.json();
-
-    // Resolve includes similarly to loadIncludedCharactersOverride()
-    const includes = Array.isArray(base.includes) ? base.includes : [];
-    const list = Array.isArray(base.characters) ? base.characters.slice() : [];
-    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
-    for (const raw of includes){
-      try{
-        const url = new URL(String(raw), baseUrl);
-        const r = await fetch(url.href, {cache:'no-store'});
-        if (!r.ok) { console.warn('include fetch failed:', raw, r.status); continue; }
-        const j = await r.json();
-        if (Array.isArray(j?.characters)) list.push(...j.characters);
-        else if (j && typeof j === 'object') list.push(j);
-      }catch(e){ console.warn('include load error:', raw, e); }
-    }
-    const merged = { ...base };
-    if (list.length) merged.characters = list;
-
-    // Persist to the same keys used by boot()
-    localStorage.setItem(WORLD_KEY, JSON.stringify(world));
-    localStorage.setItem(CHARS_KEY, JSON.stringify(merged));
-  }catch(err){
-    console.warn('autoLoadRoot failed:', err);
-  }
-}
-
-// ---- localStorage keys for user JSON
-
-
 
 function setStatusBadges() {
   const w = localStorage.getItem(WORLD_KEY);
@@ -89,12 +45,13 @@ async function readFileAsText(file) {
   });
 }
 
-function openSettingsModal(){
+function openSettingsModal() {
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
   overlay.style.display = 'flex';
   overlay.setAttribute('aria-hidden','false');
-  updateLoadIndicators();}
+  setStatusBadges();
+}
 
 function closeSettingsModal() {
   const overlay = document.getElementById('settingsModal');
@@ -152,6 +109,9 @@ async function llmReplyWithCosmos(history, userText, options = {}) {
 
 // Provide a simple provider-agnostic entrypoint for the rest of the app/UI.
 window.GameAI = window.GameAI || {};
+
+// ===== chub.ai import + schedule merge helpers =====
+const CHARS_KEY = typeof CHARS_KEY !== 'undefined' ? CHARS_KEY : 'characters_json_override_v1';
 
 function getWorldPlaces(limit = 24) {
   try {
@@ -370,8 +330,7 @@ async function boot(){
   }
 }
 
-addEventListener('DOMContentLoaded', async ()=>{
-  try { await loadIncludedCharactersOverride(); } catch(e) { console.warn('includes pre-load failed:', e); }
+addEventListener('DOMContentLoaded', ()=>{
   boot();
 
   
@@ -389,12 +348,8 @@ addEventListener('DOMContentLoaded', async ()=>{
         const v = apiKeyInput.value.trim();
         localStorage.setItem('llm_api_key', v);
         localStorage.setItem('cosmos.apiKey', v);
-      });
-    }
-  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
-})();
+      
 
-// chub.ai importer and export chars (outside bridgeCosmosKey)
 document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
@@ -422,6 +377,7 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   }
 });
 
+
 document.getElementById('exportChars')?.addEventListener('click', () => {
   const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
@@ -431,193 +387,10 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 0);
 });
-
-// ==== Character Creation Data & Logic ====
-const APPEARANCE_OPTIONS = {
-  male: {
-    head:  ['images/player/male/head1.png','images/player/male/head2.png','images/player/male/head3.png'],
-    torso: ['images/player/male/torso1.png','images/player/male/torso2.png','images/player/male/torso3.png'],
-    legs:  ['images/player/male/legs1.png','images/player/male/legs2.png','images/player/male/legs3.png'],
-  },
-  female: {
-    head:  ['images/player/female/head1.png','images/player/female/head2.png','images/player/female/head3.png'],
-    torso: ['images/player/female/torso1.png','images/player/female/torso2.png','images/player/female/torso3.png'],
-    legs:  ['images/player/female/legs1.png','images/player/female/legs2.png','images/player/female/legs3.png'],
-  },
-  transgender: {
-    head:  ['images/player/trans/head1.png','images/player/trans/head2.png','images/player/trans/head3.png'],
-    torso: ['images/player/trans/torso1.png','images/player/trans/torso2.png','images/player/trans/torso3.png'],
-    legs:  ['images/player/trans/legs1.png','images/player/trans/legs2.png','images/player/trans/legs3.png'],
-  }
-};
-
-function defaultAppearance(g='male'){
-  const opt = APPEARANCE_OPTIONS[g] || APPEARANCE_OPTIONS.male;
-  return { head: opt.head[0], torso: opt.torso[0], legs: opt.legs[0] };
-}
-
-function openCharCreateModal(e){
-  const overlay = document.getElementById('charCreateModal');
-  if (!overlay) return;
-  overlay._opener = (e && e.currentTarget) || document.activeElement;
-  overlay.style.display = 'flex';
-  overlay.removeAttribute('inert');
-  overlay.setAttribute('aria-hidden','false');
-
-  // Seed defaults based on current/last gender
-  const st = GameState.state || {};
-  const player = st.player || {};
-  const gender = player.gender || 'male';
-  const name = player.name || '';
-  const ap = player.appearance || defaultAppearance(gender);
-
-  // Fill inputs
-  const nameEl = document.getElementById('ccName'); if (nameEl) nameEl.value = name;
-  const gEls = document.querySelectorAll('input[name="ccGender"]');
-  gEls.forEach(r => { r.checked = (r.value === gender); });
-
-  // Render option grids & preview
-  renderAppearanceSelectors(gender, ap);
-  wireCharCreateEvents();
-  const _t = nameEl || overlay; if (_t && typeof _t.focus === 'function') _t.focus({ preventScroll:true });
-}
-
-function closeCharCreateModal(){
-  const overlay = document.getElementById('charCreateModal');
-  if (!overlay) return;
-  if (overlay.contains(document.activeElement)) document.activeElement.blur();
-  overlay.style.display = 'none';
-  overlay.setAttribute('aria-hidden','true');
-  overlay.setAttribute('inert','');
-  const __op = overlay._opener || document.getElementById('openSettings') || document.body; if (__op && typeof __op.focus === 'function') __op.focus();
-}
-
-function wireCharCreateEvents(){
-  document.getElementById('charCreateCloseBtn')?.addEventListener('click', closeCharCreateModal, { once:true });
-  // Gender change re-renders selectors with defaults
-  document.querySelectorAll('input[name="ccGender"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      const g = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
-      renderAppearanceSelectors(g, defaultAppearance(g));
-    });
-  });
-  document.getElementById('ccSave')?.addEventListener('click', saveCharacterFromModal, { once:true });
-}
-
-function renderAppearanceSelectors(gender, ap){
-  const opts = APPEARANCE_OPTIONS[gender] || APPEARANCE_OPTIONS.male;
-  renderOptionStrip('ccHead',  opts.head,  ap.head,  (v)=>{ ap.head=v; updatePreview(ap); });
-  renderOptionStrip('ccTorso', opts.torso, ap.torso, (v)=>{ ap.torso=v; updatePreview(ap); });
-  renderOptionStrip('ccLegs',  opts.legs,  ap.legs,  (v)=>{ ap.legs=v; updatePreview(ap); });
-  updatePreview(ap);
-  // stash draft on overlay for access on save
-  const overlay = document.getElementById('charCreateModal');
-  overlay._apDraft = ap;
-}
-
-function renderOptionStrip(id, list, current, onPick){
-  const box = document.getElementById(id);
-  if (!box) return;
-  box.innerHTML = '';
-  list.forEach(src => {
-    const b = document.createElement('button');
-    b.className = 'btn-ghost';
-    b.style.padding = '.25rem'; b.style.borderRadius = '10px';
-    b.style.borderColor = (src === current) ? '#67c1f5' : '#2a3441';
-    b.innerHTML = `<img src="${src}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #1b222b" />`;
-    b.addEventListener('click', (e) => {
-      e.preventDefault();
-      onPick(src);
-      // re-render to reflect selection highlight
-      renderOptionStrip(id, list, src, onPick);
-    });
-    box.appendChild(b);
-  });
-}
-
-function updatePreview(ap){
-  const h = document.getElementById('ccPreviewHead');
-  const t = document.getElementById('ccPreviewTorso');
-  const l = document.getElementById('ccPreviewLegs');
-  if (h) h.src = ap.head;
-  if (t) t.src = ap.torso;
-  if (l) l.src = ap.legs;
-}
-
-function saveCharacterFromModal(){
-  const overlay = document.getElementById('charCreateModal');
-  const name = document.getElementById('ccName')?.value?.trim() || '';
-  const gender = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
-  const ap = overlay?._apDraft || defaultAppearance(gender);
-
-  const player = {
-    name: name || 'Player',
-    gender,
-    age: 18,
-    family: ['mother','sister'],
-    appearance: ap,
-    description: `${name || 'You'} are 18, just finished high school, living with Mom and Sister. Gender: ${gender}.`
-  };
-  // (no reassign) GameState.state is a module export object
-  GameState.state.player = player;
-  try { GameState.saveState?.(); } catch(e){}
-
-  renderPlayerCard();
-  closeCharCreateModal();
-}
-
-function renderPlayerCard(){
-  const box = document.getElementById('sidebarInfo');
-  if (!box) return;
-
-  const p = (window.GameState && window.GameState.state && window.GameState.state.player) || null;
-  box.innerHTML = '';
-  if (!p){
-    box.innerHTML = '<div class="small">No character yet.</div>';
-    return;
-  }
-
-  const ap = p.appearance || {};
-  const wrapStyle = 'display:flex;flex-direction:column;gap:.5rem';
-  const title = 'font-size:.8rem;opacity:.85;letter-spacing:.02em';
-  const label = 'font-size:.75rem;opacity:.75;margin:.25rem 0 .1rem';
-  const boxStyle = 'width:100%;height:100px;border:1px solid #1b222b;border-radius:10px;background:#0f141a;display:flex;align-items:center;justify-content:center;overflow:hidden';
-  const imgStyle = 'max-width:100%;max-height:100%;object-fit:cover;display:block';
-
-  box.innerHTML = `
-    <div style="${wrapStyle}">
-      <div style="${title}">Your Info</div>
-
-      <div class="pc-name">${p.name || 'Player'}</div>
-      <div class="small">Sex: ${p.gender || '—'}</div>
-
-      <div style="${label}">Head</div>
-      <div style="${boxStyle}">
-        ${ap.head ? `<img src="${ap.head}" alt="Head" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No head selected</div>'}
-      </div>
-
-      <div style="${label}">Torso</div>
-      <div style="${boxStyle}">
-        ${ap.torso ? `<img src="${ap.torso}" alt="Torso" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No torso selected</div>'}
-      </div>
-
-      <div style="${label}">Legs</div>
-      <div style="${boxStyle}">
-        ${ap.legs ? `<img src="${ap.legs}" alt="Legs" style="${imgStyle}">` : '<div class="small" style="opacity:.6">No legs selected</div>'}
-      </div>
-    </div>
-  `;
-}// Open creation on first run
-(function ensurePlayerAtStart(){
-  const p = (GameState.state && GameState.state.player) || null;
-  if (!p) {
-    // Delay until DOM ready
-    setTimeout(()=> openCharCreateModal(), 50);
-  } else {
-    renderPlayerCard();
-  }
+});
+    }
+  } catch(e) { console.warn('Cosmos key bridge failed:', e); }
 })();
-
 // header buttons
   { const el = document.getElementById('advance'); if (el) el.addEventListener('click', advanceTime); }
 
@@ -667,8 +440,8 @@ function renderPlayerCard(){
         setGameData(window.GameData.WORLD, window.GameData.CHARACTERS);
       }
       GameState.saveState();
-      updateLoadIndicators();
-alert('Loaded custom map.json');
+      setStatusBadges();
+      alert('Loaded custom map.json');
     } catch (err) {
       alert('Invalid map.json: ' + (err.message || err));
     } finally {
@@ -735,8 +508,8 @@ alert('Loaded custom map.json');
   applySettings();
 
   // update status badges when opening settings
-  document.getElementById('openSettings')?.addEventListener('click', updateLoadIndicators);
-  document.getElementById('openSettings2')?.addEventListener('click', updateLoadIndicators);
+  document.getElementById('openSettings')?.addEventListener('click', setStatusBadges);
+  document.getElementById('openSettings2')?.addEventListener('click', setStatusBadges);
   setStatusBadges();
 
   // --- Character Builder wiring ---
@@ -750,189 +523,3 @@ alert('Loaded custom map.json');
   { const el = document.getElementById('charBuildSave');      if (el) el.addEventListener('click', CharBuild.addCharacterToGame); }
 
 });
-// Close character create when clicking the backdrop
-document.getElementById('charCreateModal')?.addEventListener('click', (e)=>{
-  if (e.target && e.target.id === 'charCreateModal') closeCharCreateModal();
-});
-
-
-// === Characters includes loader ===
-// If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
-// We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-// === Characters includes loader ===
-// If characters.json has "includes": ["characters/sarah.json", ...], aggregate them.
-// We seed the local override (CHARS_KEY) so existing getCharactersObj() continues to work unchanged.
-async function loadIncludedCharactersOverride() {
-  const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
-  try {
-    const baseRes = await fetch('characters.json', { cache: 'no-store' });
-    if (!baseRes.ok) {
-      console.warn('characters.json fetch failed:', baseRes.status);
-      return;
-    }
-
-    const base = await baseRes.json();
-    const includes = Array.isArray(base.includes) ? base.includes : [];
-    let list = Array.isArray(base.characters) ? base.characters.slice() : [];
-
-    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
-    for (const raw of includes) {
-      try {
-        const url = new URL(String(raw), baseUrl);
-        const r = await fetch(url.href, { cache: 'no-store' });
-        if (!r.ok) {
-          console.warn('include fetch failed:', raw, r.status);
-          continue;
-        }
-        const j = await r.json();
-        if (Array.isArray(j?.characters)) list.push(...j.characters);
-        else if (j && typeof j === 'object') list.push(j);
-      } catch (e) {
-        console.warn('include load error:', raw, e);
-      }
-    }
-
-    if (!list.length) {
-      console.warn('No characters loaded from includes. Using base.characters if present.');
-      if (!Array.isArray(base.characters)) {
-        console.warn('No base.characters found either.');
-      }
-    }
-
-    const merged = { ...base };
-    if (list.length) merged.characters = list;
-
-    localStorage.setItem(CK, JSON.stringify(merged));
-    try {
-      window.GameLogic?.updatePresence?.();
-    } catch (e) {
-      console.warn('GameLogic.updatePresence failed:', e);
-    }
-  } catch (e) {
-    console.warn('includes loader failed:', e);
-  }
-}
-// === Root loader probe (robust) ===
-async function probeRootAndStore(){
-  const WORLD_KEY_FALLBACK = 'world_json_override_v1';
-  const CHARS_KEY_FALLBACK = 'characters_json_override_v1';
-  const WK = (typeof WORLD_KEY !== 'undefined') ? WORLD_KEY : WORLD_KEY_FALLBACK;
-  const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : CHARS_KEY_FALLBACK;
-  window.BootDebug = window.BootDebug || {};
-  window.BootDebug.probe = { world:{}, characters:{}, includes:[] };
-
-  // Fetch WORLD.json
-  const worldHref = new URL('./WORLD.json', location.href).href;
-  let world = null;
-  try{
-    const r = await fetch(worldHref, { cache:'no-store' });
-    window.BootDebug.probe.world.status = r.status;
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    world = await r.json();
-    window.BootDebug.probe.world.ok = true;
-  }catch(e){
-    window.BootDebug.probe.world.ok = false;
-    window.BootDebug.probe.world.error = String(e && e.message || e);
-  }
-  if (world) {
-    try { localStorage.setItem(WK, JSON.stringify(world)); } catch{}
-  }
-
-  // Fetch characters.json + resolve includes
-  const charsHref = new URL('./characters.json', location.href).href;
-  let merged = null, includes = [];
-  try{
-    const r = await fetch(charsHref, { cache:'no-store' });
-    window.BootDebug.probe.characters.status = r.status;
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const base = await r.json();
-    includes = Array.isArray(base.includes) ? base.includes : [];
-    let list = Array.isArray(base.characters) ? base.characters.slice() : [];
-    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
-    for (const raw of includes) {
-      const rec = { path:String(raw), ok:false, status:0, added:0 };
-      try{
-        const url = new URL(String(raw), baseUrl);
-        const rr = await fetch(url.href, { cache:'no-store' });
-        rec.status = rr.status;
-        if (!rr.ok) throw new Error('HTTP ' + rr.status);
-        const j = await rr.json();
-        if (Array.isArray(j?.characters)) { list.push(...j.characters); rec.added = j.characters.length; }
-        else if (j && typeof j === 'object') { list.push(j); rec.added = 1; }
-        rec.ok = true;
-      }catch(e){
-        rec.error = String(e && e.message || e);
-      }
-      window.BootDebug.probe.includes.push(rec);
-    }
-    merged = { ...base };
-    if (list.length) merged.characters = list;
-    window.BootDebug.probe.characters.ok = true;
-  }catch(e){
-    window.BootDebug.probe.characters.ok = false;
-    window.BootDebug.probe.characters.error = String(e && e.message || e);
-  }
-  if (merged) {
-    try { localStorage.setItem(CK, JSON.stringify(merged)); } catch{}
-  }
-
-  // Flip lights
-  try { updateLoadIndicators(); } catch{}
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  try { await probeRootAndStore(); } catch(e){ console.warn('probeRootAndStore error:', e); }
-});
-
-
-function updateLoadIndicators(){
-  try{
-    const WK = (typeof WORLD_KEY !== 'undefined') ? WORLD_KEY : 'world_json_override_v1';
-    const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
-    let wOk = false, cOk = false;
-    let wTitle = 'Not loaded', cTitle = 'Not loaded';
-
-    try{
-      const wStr = localStorage.getItem(WK);
-      const w = wStr ? JSON.parse(wStr) : null;
-      if (w) {
-        const p = w.passages;
-        wOk = Array.isArray(p) ? p.length>0 : (p && typeof p==='object' ? Object.keys(p).length>0 : false);
-        wTitle = wOk ? 'Loaded' : 'No passages';
-      }
-    }catch{}
-
-    try{
-      const cStr = localStorage.getItem(CK);
-      const c = cStr ? JSON.parse(cStr) : null;
-      const arr = Array.isArray(c?.characters) ? c.characters : [];
-      cOk = arr.length > 0;
-      cTitle = cOk ? `Loaded (${arr.length})` : 'No characters';
-    }catch{}
-
-    const wl = document.getElementById('worldLight');
-    const cl = document.getElementById('charsLight');
-    const il = document.getElementById('includesLight');
-
-    if (wl){ wl.classList.toggle('ok', wOk); wl.title = wTitle; }
-    if (cl){ cl.classList.toggle('ok', cOk); cl.title = cTitle; }
-
-    // Includes light: green if all ok, amber if any failed, red if none
-    let includeState = 'none', includeTitle = 'No includes fetched';
-    try{
-      const inc = (window.BootDebug && window.BootDebug.probe && Array.isArray(window.BootDebug.probe.includes)) ? window.BootDebug.probe.includes : [];
-      if (inc.length){
-        const anyFail = inc.some(x => !x.ok);
-        includeState = anyFail ? 'warn' : 'ok';
-        includeTitle = anyFail ? 'Some includes failed' : 'All includes loaded';
-      }
-    }catch{}
-    if (il){
-      il.classList.remove('ok','warn');
-      if (includeState==='ok') il.classList.add('ok');
-      else if (includeState==='warn') il.classList.add('warn');
-      il.title = includeTitle;
-    }
-  }catch(e){ console.warn('updateLoadIndicators failed:', e); }
-}
-
