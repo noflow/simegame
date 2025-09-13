@@ -89,13 +89,12 @@ async function readFileAsText(file) {
   });
 }
 
-function openSettingsModal() {
+function openSettingsModal(){
   const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
   overlay.style.display = 'flex';
   overlay.setAttribute('aria-hidden','false');
-  setStatusBadges();
-}
+  updateLoadIndicators();}
 
 function closeSettingsModal() {
   const overlay = document.getElementById('settingsModal');
@@ -668,8 +667,8 @@ function renderPlayerCard(){
         setGameData(window.GameData.WORLD, window.GameData.CHARACTERS);
       }
       GameState.saveState();
-      setStatusBadges();
-      alert('Loaded custom map.json');
+      updateLoadIndicators();
+alert('Loaded custom map.json');
     } catch (err) {
       alert('Invalid map.json: ' + (err.message || err));
     } finally {
@@ -736,8 +735,8 @@ function renderPlayerCard(){
   applySettings();
 
   // update status badges when opening settings
-  document.getElementById('openSettings')?.addEventListener('click', setStatusBadges);
-  document.getElementById('openSettings2')?.addEventListener('click', setStatusBadges);
+  document.getElementById('openSettings')?.addEventListener('click', updateLoadIndicators);
+  document.getElementById('openSettings2')?.addEventListener('click', updateLoadIndicators);
   setStatusBadges();
 
   // --- Character Builder wiring ---

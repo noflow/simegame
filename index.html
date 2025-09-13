@@ -240,23 +240,20 @@
         <div class="divider"></div>
 
         <h3 class="small" style="margin:.25rem 0 .5rem 0;">World & Characters</h3>
-        <div class="row" style="gap:.75rem; flex-wrap:wrap">
-          <label class="btn-ghost" for="mapFile" title="Load a world map JSON">Load map.json</label>
-          <input id="mapFile" type="file" accept="application/json" style="display:none"/>
+<div class="status-row">
+  <div class="label">WORLD.json</div>
+  <div id="worldLight" class="light-dot" title="World load status"></div>
+</div>
+<div class="status-row">
+  <div class="label">characters.json</div>
+  <div id="charsLight" class="light-dot" title="Characters load status"></div>
+</div>
 
-          <label class="btn-ghost" for="charsFile" title="Load a characters JSON">Load characters.json</label>
-          <input id="charsFile" type="file" accept="application/json" style="display:none"/>
-
-          <button id="clearOverrides" class="btn-ghost" title="Use the built-in JSON again" disabled>Use built-in data</button>
-        
-          <label class="btn-ghost" for="chubFile" title="Load a chub.ai character JSON">Load chub.ai character.json</label>
-          <input id="chubFile" type="file" accept="application/json" style="display:none"/>
-        </div>
-        <p class="small" id="dataStatus" style="opacity:.8;margin:.25rem 0 0 0;">
-          Using: <span id="worldSource">none</span> · <span id="charsSource">none</span>
-        </p>
-
-        <div class="divider"></div>
+<div class="row" style="gap:.75rem; flex-wrap:wrap; margin-top:.5rem;">
+  <label class="btn-ghost" for="chubFile" title="Load a chub.ai character JSON">Load chub.ai character.json</label>
+  <input id="chubFile" type="file" accept="application/json" style="display:none"/>
+</div>
+<div class="divider"></div>
 
         <h3 class="small" style="margin:.25rem 0 .5rem 0;">Game</h3>
         <div class="row" style="gap:.5rem;flex-wrap:wrap">
