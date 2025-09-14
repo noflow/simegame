@@ -1,0 +1,19 @@
+AI Knowledge + Schedule + Events
+--------------------------------
+New files:
+  src/ai/knowledge.js
+  src/ai/schedule.js
+  src/ai/events.js
+  src/ai/router.v2.js
+  src/ai/boot-demo.js  (optional helper)
+
+Use `respondToV2(...)` from router.v2.js to enable:
+- Relationship & world facts
+- Schedule with meeting overrides (reverts to normal afterward automatically)
+- Pre-planned events that flip flags/behaviors and bump meters
+- Location-based verbosity (e.g., coffee shop => concise Q&A)
+
+Quick test in console after loading your game:
+  await window.AI.respondV2({ id:'lily', name:'Lily', relations:{ MC:{ type:'sister', strength:80 } } }, "Hey Lily, are you coming to the coffee shop?")
+
+To integrate permanently, call `respondToV2` from your chat handler instead of the old router.
