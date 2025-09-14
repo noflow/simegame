@@ -1,0 +1,6 @@
+Applied AI v2 integration/update
+--------------------------------
+- Ensured ai files under src/ai/: memory.js, policy.js, adapter.js, knowledge.js, schedule.js, events.js, router.v2.js (already present)
+- Patched chat/index.js: sendCurrentMessage() uses respondToV2 with Promise chain (no async/await)
+- Removed any previously injected "Simegame AI Chat Hook" from index.html: yes
+- Your existing chat UI remains unchanged; AI replies now come from router.v2 (schedules, meetings, events, meters)
