@@ -1,0 +1,13 @@
+Example hook:
+--------------
+import { respondTo } from './src/ai/router.js';
+
+async function onPlayerMessage(npc, text) {
+  const world = window.WORLD_STATE || {};
+  const now = new Date().toLocaleString();
+  const location = window.CurrentLocation || world?.currentLocation || { name: 'Unknown' };
+  const meters = { friendship: npc?.meters?.friendship ?? 0, romance: npc?.meters?.romance ?? 0 };
+
+  const reply = await respondTo(text, { world, now, location, npc, meters, playerName: window.PLAYER?.name });
+  window.UI?.appendMessage?.({ role: 'assistant', text: reply, npc: npc.name });
+}

@@ -1,0 +1,11 @@
+Simegame AI Injection - Summary
+===============================
+- Added: src/ai/ (memory.js, policy.js, adapter.js, router.js)
+- Added docs: AI_README.txt, AI_INTEGRATION_SNIPPET.txt
+- Patched index.html with AI <script type='module'> tags.
+
+Configure via localStorage:
+  localStorage.llm_api_key = 'YOUR_KEY'
+  localStorage.llm_base_url = 'https://api.pawan.krd/cosmosrp/v1'
+  localStorage.llm_model = 'CosmosRP-V3.5'
+  localStorage.ai_verbosity = 'concise'  # or 'balanced' | 'descriptive'
