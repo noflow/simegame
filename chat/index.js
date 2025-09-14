@@ -1,5 +1,6 @@
 // /chat/index.js
 console.log("✅ Loaded chat module from:", import.meta.url);
+import { respondToV2 } from '../src/ai/router.v2.js';
 
 const CHAT_OVERLAY_ID = 'chatModal';
 let overlay = null;
@@ -162,7 +163,7 @@ export function renderChat(){
   box.scrollTop = box.scrollHeight;
 }
 
-async function sendCurrentMessage(){
+async async function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
   if (!input) return;
@@ -173,44 +174,42 @@ async function sendCurrentMessage(){
   if (!npc) return;
 
   const rel = getRelationship(currentNpcId);
-  // Push user line immediately (no delay)
+  // Push user line immediately
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  // build compact context from last ~20 turns
-  const history = Array.isArray(rel.history) ? rel.history.slice(-20) : [];
-  const messages = [
-    {
-      role: 'system',
-      content: `You are roleplaying as ${npc.name}${npc.role ? ', ' + npc.role : ''}. ` +
-               `Persona: ${npc.persona || 'neutral'}. Stay in-character, natural, and concise.`
-    },
-    ...history
-      .filter(h => h && h.text)
-      .map(h => h.speaker === 'You'
-        ? { role: 'user', content: h.text }
-        : { role: 'assistant', content: h.text })
-  ];
+  // Build/resolve world
+  let world = window.WORLD_STATE || null;
+  if (!world) {
+    try {
+      const wRes = await fetch('./WORLD.json', { cache: 'no-store' });
+      if (wRes.ok) world = await wRes.json();
+    } catch (e) {}
+  }
+  world = world || {};
+  if (world.currentDay == null && window.GameState?.day) world.currentDay = window.GameState.day;
+  if (!world.timeSegment && window.GameState?.time) world.timeSegment = window.GameState.time;
+  world.locations = world.locations || {};
+
+  // Meters
+  const meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
 
   try {
-    if (!window.CosmosRP || !window.CosmosRP.callChat) {
-      throw new Error('CosmosRP not loaded — ensure <script src="./cosmos.js"></script> is in index.html.');
-    }
-    const { content } = await window.CosmosRP.callChat({
-      messages,
-      temperature: 0.7,
-      max_tokens: 512
+    const reply = await respondToV2(text, {
+      world,
+      now: new Date().toLocaleString(),
+      npc,
+      meters
     });
-    rel.history.push({ speaker: npc.name, text: content || '…', ts: Date.now() });
+    rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
   } catch (err) {
-    console.error('LLM error:', err);
-    rel.history.push({ speaker: npc.name, text: '[Error getting reply. Check Cosmos settings.]', ts: Date.now() });
+    console.error('AI router v2 error:', err);
+    rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
   }
 
   window.GameState?.saveState?.();
   input.value = '';
   renderChat();
 }
-
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
 });
