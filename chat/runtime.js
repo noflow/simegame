@@ -134,5 +134,26 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       });
     });
   }
+
+  // --- Start chat shim for presence.js ---
+  function startChat(npcId){
+    try{
+      if (npcId) window.currentNpcId = npcId;
+      const ov = (typeof ensureModal==='function' ? ensureModal() : document.getElementById('chatOverlay'));
+      if (!ov) { console.warn('startChat: #chatOverlay not found'); return; }
+      ov.style.display = 'block';
+      ov.removeAttribute('aria-hidden');
+      const input = ov.querySelector('#chatInput');
+      if (input) input.focus();
+      if (typeof renderChat === 'function') renderChat();
+    }catch(e){ console.error('startChat error:', e); }
+  }
+  window.startChat = startChat;
+  window.GameUI = window.GameUI || {};
+  window.GameUI.startChat = startChat;
+  window.GameUI.closeChat = closeChatModal;
+  window.GameUI.renderChat = window.renderChat || (function(){});
+  window.GameUI.sendCurrentMessage = window.sendCurrentMessage;
+
   window.sendCurrentMessage = sendCurrentMessage;
 }
