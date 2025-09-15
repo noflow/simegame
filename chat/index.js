@@ -163,7 +163,9 @@ export function renderChat(){
   box.scrollTop = box.scrollHeight;
 }
 
-async async function sendCurrentMessage(){
+async 
+/* ASYNC-FN REMOVED FOR LEGACY ENGINE:
+async function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
   if (!input) return;
@@ -206,6 +208,8 @@ async async function sendCurrentMessage(){
     });
   });
 }
+*/
+
 window.sendCurrentMessage = sendCurrentMessage;
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
