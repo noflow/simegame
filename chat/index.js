@@ -164,8 +164,7 @@ export function renderChat(){
 }
 
 
-/* ASYNC-FN REMOVED FOR LEGACY ENGINE:
-async function sendCurrentMessage(){
+function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
   if (!input) return;
@@ -176,8 +175,10 @@ async function sendCurrentMessage(){
   if (!npc) return;
 
   const rel = getRelationship(currentNpcId);
+  // show player's line immediately
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
+  // load world (WORLD.json or window.GameState fallback)
   var world = window.WORLD_STATE || null;
   var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
       .then(function(r){ return r.ok ? r.json() : {}; })
@@ -208,7 +209,8 @@ async function sendCurrentMessage(){
     });
   });
 }
-*/
+window.sendCurrentMessage = sendCurrentMessage; // <-- make it visible to onsubmit
+
 
 window.sendCurrentMessage = sendCurrentMessage;
 window.GameUI = Object.assign(window.GameUI || {}, {
