@@ -182,8 +182,10 @@ function sendCurrentMessage(){
   } catch(e){}
 
   const rel = getRelationship(currentNpcId);
+  // show player's line immediately
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
+  // load world (WORLD.json or window.GameState fallback)
   var world = window.WORLD_STATE || null;
   var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
       .then(function(r){ return r.ok ? r.json() : {}; })
@@ -221,11 +223,8 @@ function sendCurrentMessage(){
     });
   });
 }
-window.sendCurrentMessage = sendCurrentMessage;
+
 window.sendCurrentMessage = sendCurrentMessage; // <-- make it visible to onsubmit
-
-
-window.sendCurrentMessage = sendCurrentMessage;
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
 });
