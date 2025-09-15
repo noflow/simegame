@@ -163,7 +163,9 @@ export function renderChat(){
   box.scrollTop = box.scrollHeight;
 }
 
-async async function sendCurrentMessage(){
+
+/* ASYNC-FN REMOVED FOR LEGACY ENGINE:
+async function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
   if (!input) return;
@@ -174,38 +176,44 @@ async async function sendCurrentMessage(){
   if (!npc) return;
 
   const rel = getRelationship(currentNpcId);
+  // Push user line immediately
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  var world = window.WORLD_STATE || null;
-  var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
-      .then(function(r){ return r.ok ? r.json() : {}; })
-      .catch(function(){ return {}; })
-  ).then(function(w){ return w || {}; });
+  // Build/resolve world
+  let world = window.WORLD_STATE || null;
+  if (!world) {
+    try {
+      const wRes = fetch('./WORLD.json', { cache: 'no-store' });
+      if (wRes.ok) world = await wRes.json();
+    } catch (e) {}
+  }
+  world = world || {};
+  if (world.currentDay == null && window.GameState?.day) world.currentDay = window.GameState.day;
+  if (!world.timeSegment && window.GameState?.time) world.timeSegment = window.GameState.time;
+  world.locations = world.locations || {};
 
-  loadWorld.then(function(w){
-    if (w.currentDay == null && window.GameState && window.GameState.day) w.currentDay = window.GameState.day;
-    if (!w.timeSegment && window.GameState && window.GameState.time) w.timeSegment = window.GameState.time;
-    w.locations = w.locations || {};
+  // Meters
+  const meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
 
-    var meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
-
-    return respondToV2(text, {
-      world: w,
+  try {
+    const reply = respondToV2(text, {
+      world,
       now: new Date().toLocaleString(),
-      npc: npc,
-      meters: meters
-    }).then(function(reply){
-      rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
-    }).catch(function(err){
-      console.error('AI router v2 error:', err);
-      rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
-    }).then(function(){
-      if (window.GameState && window.GameState.saveState) window.GameState.saveState();
-      input.value = '';
-      renderChat();
+      npc,
+      meters
     });
-  });
+    rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
+  } catch (err) {
+    console.error('AI router v2 error:', err);
+    rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
+  }
+
+  window.GameState?.saveState?.();
+  input.value = '';
+  renderChat();
 }
+*/
+
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
 });
