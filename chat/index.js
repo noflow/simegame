@@ -1,5 +1,10 @@
+// Guard against double-loading the chat module
+if (window.__CHAT_MODULE_LOADED__) {
+  console.warn("♻️ Chat module already loaded — skipping duplicate bind.");
+} else {
+  window.__CHAT_MODULE_LOADED__ = true;
+  console.log("✅ Loaded chat module from:", import.meta.url);
 // /chat/index.js
-console.log("✅ Loaded chat module from:", import.meta.url);
 import { respondToV2 } from '../src/ai/router.v2.js';
 
 const CHAT_OVERLAY_ID = 'chatModal';
@@ -165,77 +170,66 @@ export function renderChat(){
 
 
 
-function sendCurrentMessage(){
-  const ov = document.getElementById('chatOverlay') || (typeof ensureModal==='function' ? ensureModal() : null);
-  const input = (ov && ov.querySelector) ? ov.querySelector('#chatInput') : document.querySelector('#chatInput');
-  if (!input) return;
-  const text = String(input.value || '').trim();
-  if (!text) return;
+  function sendCurrentMessage(){
+    const ov = document.getElementById('chatOverlay') || (typeof ensureModal==='function' ? ensureModal() : null);
+    const input = (ov && ov.querySelector) ? ov.querySelector('#chatInput') : document.querySelector('#chatInput');
+    if (!input) return;
+    const text = String(input.value || '').trim();
+    if (!text) return;
 
-  const npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : (window.ActiveNPC||{id:'lily',name:'Lily'}));
-  if (!npc) return;
+    const npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : (window.ActiveNPC||{id:'lily',name:'Lily'}));
+    if (!npc) return;
 
-  try {
-    if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
-      npc.relations = Object.assign({}, npc.relations||{}, { MC: { type:'sister', strength:80 } });
-    }
-  } catch(e){}
+    try {
+      if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
+        npc.relations = Object.assign({}, npc.relations||{}, { MC: { type:'sister', strength:80 } });
+      }
+    } catch(e){}
 
-  const rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : {history:[],friendship:0,romance:0});
-  rel.history.push({ speaker:'You', text, ts: Date.now() });
+    const rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : {history:[],friendship:0,romance:0});
+    rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  var world = window.WORLD_STATE || null;
-  var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
-      .then(function(r){ return r.ok ? r.json() : {}; })
-      .catch(function(){ return {}; })
-  ).then(function(w){ return w || {}; });
+    var world = window.WORLD_STATE || null;
+    var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : {}; })
+        .catch(function(){ return {}; })
+    ).then(function(w){ return w || {}; });
 
-  const player = {
-    id: (window.GameState && window.GameState.playerId) || 'MC',
-    name: (window.GameState && window.GameState.playerName) || 'MC'
-  };
+    const player = {
+      id: (window.GameState && window.GameState.playerId) || 'MC',
+      name: (window.GameState && window.GameState.playerName) || 'MC'
+    };
 
-  loadWorld.then(function(w){
-    if (w.currentDay == null && window.GameState && window.GameState.day) w.currentDay = window.GameState.day;
-    if (!w.timeSegment && window.GameState && window.GameState.time) w.timeSegment = window.GameState.time;
-    w.locations = w.locations || {};
+    loadWorld.then(function(w){
+      if (w.currentDay == null && window.GameState && window.GameState.day) w.currentDay = window.GameState.day;
+      if (!w.timeSegment && window.GameState && window.GameState.time) w.timeSegment = window.GameState.time;
+      w.locations = w.locations || {};
 
-    var meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
+      var meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
 
-    return respondToV2(text, {
-      world: w,
-      now: new Date().toLocaleString(),
-      npc: npc,
-      meters: meters,
-      player: player
-    }).then(function(reply){
-      rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
-    }).catch(function(err){
-      console.error('AI router v2 error:', err);
-      rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
-    }).then(function(){
-      if (window.GameState && window.GameState.saveState) window.GameState.saveState();
-      if (input) input.value = '';
-      if (typeof renderChat==='function') renderChat();
+      return respondToV2(text, {
+        world: w,
+        now: new Date().toLocaleString(),
+        npc: npc,
+        meters: meters,
+        player: player
+      }).then(function(reply){
+        rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
+      }).catch(function(err){
+        console.error('AI router v2 error:', err);
+        rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
+      }).then(function(){
+        if (window.GameState && window.GameState.saveState) window.GameState.saveState();
+        if (input) input.value = '';
+        if (typeof renderChat==='function') renderChat();
+      });
     });
-  });
-}
+  }
+  window.sendCurrentMessage = sendCurrentMessage;
 
 window.sendCurrentMessage = sendCurrentMessage; // <-- make it visible to onsubmit
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
 });
 
-if (!window.__chatCloseWired) {
-  window.__chatCloseWired = true;
-  document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape') closeChatModal();
-  });
-  document.addEventListener('click', function(e){
-    if (!e.target) return;
-    if (e.target.matches && (e.target.matches('#chatClose') || e.target.matches('[data-chat-close]') || (e.target.closest && e.target.closest('[data-chat-close],#chatClose')))) {
-      e.preventDefault();
-      closeChatModal();
-    }
-  }, true);
 }

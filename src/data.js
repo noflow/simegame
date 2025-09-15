@@ -2,7 +2,7 @@
 import { state } from './state.js';
 import { renderLocation } from './render/map.js';
 import { updatePresence } from './presence.js';
-import { renderChat } from '../chat/index.js?v=3';
+
 import { renderSidebar } from './render/sidebar.js';
 
 export let WORLD = null;

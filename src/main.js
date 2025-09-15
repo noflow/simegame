@@ -8,7 +8,6 @@ import * as GameLogic from './presence.js';
 import { renderLocation, goTo } from './render/map.js';
 import { renderSidebar, renderInventory, renderMoney } from './render/sidebar.js';
 
-import * as GameUI from '../chat/index.js?v=3';
 import * as Known from './known/index.js';
 import * as Debug from './debug.js';
 import * as CharBuild from './builder/character_builder.js';
