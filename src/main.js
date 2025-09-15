@@ -106,7 +106,7 @@ function closeSettingsModal() {
 window.GameConst = GameConst;
 window.GameState = GameState;
 window.GameLogic = GameLogic;
-window.GameUI = window.GameUI || {}; window.GameUI.renderSidebar = renderSidebar;
+window.GameUI = { ...GameUI, renderChat: GameUI.renderChat, renderSidebar };
 window.GameKnown = Known;
 window.GameDebug = Debug;
 window.GameNav = { goTo };
