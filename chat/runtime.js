@@ -5,6 +5,44 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.__CHAT_RUNTIME_LOADED__ = true;
   console.log("✅ Chat runtime loaded.");
 
+  // --- ensureModal: create a simple overlay if missing ---
+  if (typeof window.ensureModal !== 'function') {
+    function ensureModal(){
+      var ov = document.getElementById('chatOverlay');
+      if (ov) return ov;
+      ov = document.createElement('div');
+      ov.id = 'chatOverlay';
+      ov.setAttribute('role','dialog');
+      ov.setAttribute('aria-hidden','true');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;z-index:9999;';
+      ov.innerHTML = [
+        '<div id="chatBox" style="position:absolute;right:20px;bottom:20px;width:360px;max-width:90vw;background:#111;color:#eee;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto;">',
+        '  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#1b1b1b;border-bottom:1px solid #2a2a2a;">',
+        '    <strong id="chatTitle">Chat</strong>',
+        '    <button id="chatClose" data-chat-close style="background:#333;color:#eee;border:0;border-radius:8px;padding:6px 10px;cursor:pointer">✕</button>',
+        '  </div>',
+        '  <div id="chatLog" style="height:260px;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px;background:#0f0f0f;"></div>',
+        '  <form id="chatForm" style="display:flex;gap:6px;padding:10px;background:#1a1a1a;border-top:1px solid #2a2a2a">',
+        '    <input id="chatInput" autocomplete="off" placeholder="Say something..." style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid #333;background:#0e0e0e;color:#eee">',
+        '    <button id="sendBtn" type="submit" style="padding:8px 12px;border-radius:8px;border:0;background:#3b82f6;color:white;cursor:pointer">Send</button>',
+        '  </form>',
+        '</div>'
+      ].join('');
+      document.body.appendChild(ov);
+      // Wire submit to sendCurrentMessage
+      var form = ov.querySelector('#chatForm');
+      if (form) {
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          if (typeof window.sendCurrentMessage === 'function') window.sendCurrentMessage();
+        });
+      }
+      return ov;
+    }
+    window.ensureModal = ensureModal;
+  }
+
+
   // --- Fallback helpers (only if host hasn't defined them) ---
   if (typeof window.ensureModal !== 'function') {
     function ensureModal(){ return document.getElementById('chatOverlay'); }
@@ -141,6 +179,19 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       if (npcId) window.currentNpcId = npcId;
       const ov = (typeof ensureModal==='function' ? ensureModal() : document.getElementById('chatOverlay'));
       if (!ov) { console.warn('startChat: #chatOverlay not found'); return; }
+      ov.style.display = 'block';
+      ov.removeAttribute('aria-hidden');
+      // set chat title if NPC available
+      try{
+        const npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : null);
+        const title = ov.querySelector('#chatTitle');
+        if (title && npc && npc.name) title.textContent = npc.name;
+      }catch(_){}
+      const input = ov.querySelector('#chatInput');
+      if (input) input.focus();
+      if (typeof renderChat === 'function') renderChat();
+    }catch(e){ console.error('startChat error:', e); }
+  }
       ov.style.display = 'block';
       ov.removeAttribute('aria-hidden');
       const input = ov.querySelector('#chatInput');
