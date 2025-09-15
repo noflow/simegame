@@ -50,7 +50,11 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   }
 
   if (typeof window.renderChat !== 'function') {
-    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function escapeHtml(s){
+      var str = String(s||'');
+      var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+      return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
+    }
     function renderChat(){
       try{
         const ov = document.getElementById('chatOverlay');
@@ -186,7 +190,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         const npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : null);
         const title = ov.querySelector('#chatTitle');
         if (title && npc && npc.name) title.textContent = npc.name;
-      }catch(_){}
+      }catch(e){}
       const input = ov.querySelector('#chatInput');
       if (input) input.focus();
       if (typeof renderChat === 'function') renderChat();
