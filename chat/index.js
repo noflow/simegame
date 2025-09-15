@@ -163,7 +163,7 @@ export function renderChat(){
   box.scrollTop = box.scrollHeight;
 }
 
-async 
+
 /* ASYNC-FN REMOVED FOR LEGACY ENGINE:
 async function sendCurrentMessage(){
   const ov = ensureModal();
