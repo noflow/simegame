@@ -164,35 +164,32 @@ export function renderChat(){
 }
 
 
+
 function sendCurrentMessage(){
-  const ov = ensureModal();
-  const input = ov.querySelector('#chatInput');
+  const ov = document.getElementById('chatOverlay') || (typeof ensureModal==='function' ? ensureModal() : null);
+  const input = (ov && ov.querySelector) ? ov.querySelector('#chatInput') : document.querySelector('#chatInput');
   if (!input) return;
   const text = String(input.value || '').trim();
   if (!text) return;
 
-  const npc = getNpcById(currentNpcId);
+  const npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : (window.ActiveNPC||{id:'lily',name:'Lily'}));
   if (!npc) return;
 
-  // Fallback: ensure Lily knows MC is her sibling if missing in data
   try {
     if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
       npc.relations = Object.assign({}, npc.relations||{}, { MC: { type:'sister', strength:80 } });
     }
   } catch(e){}
 
-  const rel = getRelationship(currentNpcId);
-  // show player's line immediately
+  const rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : {history:[],friendship:0,romance:0});
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
-  // load world (WORLD.json or window.GameState fallback)
   var world = window.WORLD_STATE || null;
   var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
       .then(function(r){ return r.ok ? r.json() : {}; })
       .catch(function(){ return {}; })
   ).then(function(w){ return w || {}; });
 
-  // Derive player identity
   const player = {
     id: (window.GameState && window.GameState.playerId) || 'MC',
     name: (window.GameState && window.GameState.playerName) || 'MC'
@@ -218,8 +215,8 @@ function sendCurrentMessage(){
       rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
     }).then(function(){
       if (window.GameState && window.GameState.saveState) window.GameState.saveState();
-      input.value = '';
-      renderChat();
+      if (input) input.value = '';
+      if (typeof renderChat==='function') renderChat();
     });
   });
 }
@@ -228,3 +225,17 @@ window.sendCurrentMessage = sendCurrentMessage; // <-- make it visible to onsubm
 window.GameUI = Object.assign(window.GameUI || {}, {
   startChat, closeChatModal, renderChat, getRelationship
 });
+
+if (!window.__chatCloseWired) {
+  window.__chatCloseWired = true;
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeChatModal();
+  });
+  document.addEventListener('click', function(e){
+    if (!e.target) return;
+    if (e.target.matches && (e.target.matches('#chatClose') || e.target.matches('[data-chat-close]') || (e.target.closest && e.target.closest('[data-chat-close],#chatClose')))) {
+      e.preventDefault();
+      closeChatModal();
+    }
+  }, true);
+}
