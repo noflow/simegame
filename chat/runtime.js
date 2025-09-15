@@ -74,46 +74,39 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     window.ensureModal = ensureModal;
   }
 
-  // --- Fallback renderChat (safe) ---
-  if (typeof window.renderChat !== 'function') {
-    function escapeHtml(s){
-      var str = String(s || '');
-      var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
-      return str.replace(/[&<>\"']/g, function(ch){ return map[ch]; });
-    }
-    function renderChat(){
-      try{
-        var modal = document.getElementById('chatModal');
-        if (!modal) return;
-        var log = modal.querySelector('#chatLog');
-        if (!log) return;
-        var rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null);
-        if (!rel) { rel = { history: [], friendship: 0, romance: 0 }; if (typeof setRelationship==='function') { try{ setRelationship(window.currentNpcId, rel); }catch(e){} } }
-        if (!rel.history) rel.history = [];
-        log.innerHTML = rel.history.map(function(m){
-          var who = m.speaker || '';
-          var body = escapeHtml(m.text || '');
-          var cls = (who==='You' ? 'you' : 'npc');
-          return '<div class="msg '+cls+'"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
-        }).join('');
-        log.scrollTop = log.scrollHeight;
-      }catch(e){ console.warn('renderChat fallback failed:', e); }
-    }
-    window.renderChat = renderChat;; if (typeof setRelationship==='function') try{ setRelationship(window.currentNpcId, rel); }catch(e){} }
-        if (!rel.history) rel.history = [];
-        log.innerHTML = rel.history.map(function(m){
-          var who = m.speaker || '';
-          var body = escapeHtml(m.text || '');
-          var cls = (who==='You' ? 'you' : 'npc');
-          return '<div class=\"msg '+cls+'\"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
-        }).join('');
-        log.scrollTop = log.scrollHeight;
-      }catch(e){ console.warn('renderChat fallback failed:', e); }
-    }
-    window.renderChat = renderChat;
-    window.GameUI = window.GameUI || {};
-    window.GameUI.renderChat = renderChat;
+// --- Fallback renderChat (safe) ---
+if (typeof window.renderChat !== 'function') {
+  function escapeHtml(s){
+    var str = String(s || '');
+    var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
+    return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
   }
+  function renderChat(){
+    var modal = document.getElementById('chatModal');
+    if (!modal) return;
+    var log = modal.querySelector('#chatLog');
+    if (!log) return;
+    var rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null);
+    if (!rel) {
+      rel = { history: [], friendship: 0, romance: 0 };
+      if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel); } catch(e){} }
+    }
+    if (!rel.history) rel.history = [];
+    var html = "";
+    for (var i=0; i<rel.history.length; i++){
+      var m = rel.history[i] || {};
+      var who = m.speaker || "";
+      var body = escapeHtml(m.text || "");
+      var cls = (who === "You" ? "you" : "npc");
+      html += '<div class="msg ' + cls + '"><strong>' + escapeHtml(who) + ':</strong> ' + body + '</div>';
+    }
+    log.innerHTML = html;
+    log.scrollTop = log.scrollHeight;
+  }
+  window.renderChat = renderChat;
+  window.GameUI = window.GameUI || {};
+  window.GameUI.renderChat = renderChat;
+}
 
   // --- Close helpers & listeners ---
   function closeChatModal(){
