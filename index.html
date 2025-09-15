@@ -306,15 +306,14 @@
 <script src="./src/cosmos.js"></script>
 
 <script>
-// Boot-time stubs to avoid early reference errors before chat/runtime loads
 window.GameUI = window.GameUI || {};
 if (!window.renderChat) { window.renderChat = function(){}; }
 if (!window.GameUI.renderChat) { window.GameUI.renderChat = window.renderChat; }
-if (!window.GameUI.startChat) { window.GameUI.startChat = function(npc){ if (window.startChat) startChat(npc); }; }
+if (!window.GameUI.startChat) { window.GameUI.startChat = function(n){ if (window.startChat) startChat(n); }; }
 if (!window.GameUI.closeChat) { window.GameUI.closeChat = function(){ if (window.closeChatModal) closeChatModal(); }; }
 if (!window.GameUI.sendCurrentMessage) { window.GameUI.sendCurrentMessage = function(){ if (window.sendCurrentMessage) window.sendCurrentMessage(); }; }
 </script>
-<script type="module" src="./chat/runtime.js?v=27"></script>
+<script type="module" src="./chat/runtime.js?v=28"></script>
 <script type="module" src="./src/main.js?v=21"></script> <!-- bump v to clear cache -->
 
 

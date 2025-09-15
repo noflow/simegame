@@ -18,11 +18,11 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       ov.innerHTML = [
         '<style id="chatOverlayStyles">',
         '#chatOverlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;z-index:9999;}',
-        '#chatBox{position:absolute;right:24px;bottom:24px;width:520px;max-width:92vw;height:70vh;max-height:86vh;background:#101114;color:#e6e6e6;border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.55);overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}',
+        '#chatBox{position:absolute;right:24px;bottom:24px;width:900px;max-width:92vw;height:80vh;max-height:92vh;background:#101114;color:#e6e6e6;border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,0.55);overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}',
         '#chatHeader{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#17181c;border-bottom:1px solid #24262b}',
         '#chatTitle{font-weight:600}',
         '#chatClose{background:#2a2d34;color:#e6e6e6;border:0;border-radius:10px;padding:6px 10px;cursor:pointer}',
-        '#chatLog{height:calc(70vh - 120px);max-height:calc(86vh - 120px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#0d0f13}',
+        '#chatLog{height:calc(80vh - 140px);max-height:calc(92vh - 140px);overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#0d0f13}',
         '#chatLog .msg{padding:8px 10px;border-radius:10px;max-width:85%}',
         '#chatLog .msg.you{align-self:flex-end;background:#1f4f2e}',
         '#chatLog .msg.npc{align-self:flex-start;background:#222733}',
@@ -78,8 +78,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   if (typeof window.renderChat !== 'function') {
     function escapeHtml(s){
       var str = String(s||'');
-      var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
-      return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
+      var map = {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'};
+      return str.replace(/[&<>\"']/g, function(ch){ return map[ch]; });
     }
     function renderChat(){
       try{
@@ -94,7 +94,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           var who = m.speaker || '';
           var body = escapeHtml(m.text || '');
           var cls = (who==='You' ? 'you' : 'npc');
-          return '<div class="msg '+cls+'"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
+          return '<div class=\"msg '+cls+'\"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
         }).join('');
         log.scrollTop = log.scrollHeight;
       }catch(e){ console.warn('renderChat fallback failed:', e); }
@@ -166,9 +166,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
     var rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : {history:[],friendship:0,romance:0});
     if (!rel.history) rel.history = [];
-    rel.history.push({ speaker:'You', text:text, ts: Date.now() });
-
-    var world = window.WORLD_STATE || null;
+    \1if (typeof setRelationship==='function') try{ setRelationship(npc.id, rel); }catch(e){} var world = window.WORLD_STATE || null;
     var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
         .then(function(r){ return r.ok ? r.json() : {}; })
         .catch(function(){ return {}; })
@@ -195,11 +193,9 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         meters: meters,
         player: player
       }).then(function(reply){
-        rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
-      }).catch(function(err){
+        \1if (typeof setRelationship==='function') try{ setRelationship(npc.id, rel); }catch(e){} }).catch(function(err){
         console.error('AI router v2 error:', err);
-        rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
-      }).then(function(){
+        \1if (typeof setRelationship==='function') try{ setRelationship(npc.id, rel); }catch(e){} }).then(function(){
         if (window.GameState && window.GameState.saveState) window.GameState.saveState();
         if (input) input.value = '';
         if (typeof renderChat==='function') renderChat();
@@ -209,22 +205,38 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.sendCurrentMessage = sendCurrentMessage;
 
   // --- Start chat shim (presence.js) ---
-  function startChat(npcId){
+  function startChat(npcOrId){
     try{
-      if (npcId) window.currentNpcId = npcId;
-      var ov = (typeof ensureModal==='function' ? ensureModal() : document.getElementById('chatOverlay'));
-      if (!ov) { console.warn('startChat: #chatOverlay not found'); return; }
-      ov.style.display = 'block';
-      ov.removeAttribute('aria-hidden');
+      var npc = null;
+      if (npcOrId && typeof npcOrId === 'object') { npc = npcOrId; }
+      else if (typeof getNpcById==='function' && npcOrId) { npc = getNpcById(npcOrId); }
+      if (npc && npc.id) {
+        window.currentNpcId = npc.id;
+        window.ActiveNPC = npc;
+      } else if (!window.currentNpcId) {
+        window.currentNpcId = 'lily';
+      }
+      var modal = (typeof ensureModal==='function' ? ensureModal() : document.getElementById('chatModal'));
+      if (!modal) { console.warn('startChat: #chatModal not found'); return; }
+      var wrap = modal.querySelector('.cosmosrp');
+      if (wrap) { wrap.style.display = 'flex'; }
+      modal.removeAttribute('aria-hidden');
+      // ensure relationship exists
       try{
-        var npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : null);
-        var title = ov.querySelector('#chatTitle');
-        if (title && npc && npc.name) title.textContent = npc.name;
+        var relInit = (typeof getRelationship==='function') ? getRelationship(window.currentNpcId) : null;
+        if (!relInit) { relInit = { history: [], friendship: 0, romance: 0 }; if (typeof setRelationship==='function') setRelationship(window.currentNpcId, relInit); }
       }catch(e){}
-      var input = ov.querySelector('#chatInput');
+      // title
+      try{
+        var npc2 = npc || (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : null);
+        var title = modal.querySelector('#chatTitle');
+        if (title && npc2 && npc2.name) title.textContent = npc2.name;
+      }catch(e){}
+      var input = modal.querySelector('#chatInput');
       if (input) input.focus();
       if (typeof renderChat === 'function') renderChat();
     }catch(e){ console.error('startChat error:', e); }
+  }catch(e){ console.error('startChat error:', e); }
   }
   window.startChat = startChat;
   window.GameUI = window.GameUI || {};
