@@ -164,8 +164,7 @@ export function renderChat(){
 }
 
 
-/* ASYNC-FN REMOVED FOR LEGACY ENGINE:
-async function sendCurrentMessage(){
+function sendCurrentMessage(){
   const ov = ensureModal();
   const input = ov.querySelector('#chatInput');
   if (!input) return;
@@ -175,6 +174,13 @@ async function sendCurrentMessage(){
   const npc = getNpcById(currentNpcId);
   if (!npc) return;
 
+  // Fallback: ensure Lily knows MC is her sibling if missing in data
+  try {
+    if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
+      npc.relations = Object.assign({}, npc.relations||{}, { MC: { type:'sister', strength:80 } });
+    }
+  } catch(e){}
+
   const rel = getRelationship(currentNpcId);
   rel.history.push({ speaker:'You', text, ts: Date.now() });
 
@@ -183,6 +189,12 @@ async function sendCurrentMessage(){
       .then(function(r){ return r.ok ? r.json() : {}; })
       .catch(function(){ return {}; })
   ).then(function(w){ return w || {}; });
+
+  // Derive player identity
+  const player = {
+    id: (window.GameState && window.GameState.playerId) || 'MC',
+    name: (window.GameState && window.GameState.playerName) || 'MC'
+  };
 
   loadWorld.then(function(w){
     if (w.currentDay == null && window.GameState && window.GameState.day) w.currentDay = window.GameState.day;
@@ -195,7 +207,8 @@ async function sendCurrentMessage(){
       world: w,
       now: new Date().toLocaleString(),
       npc: npc,
-      meters: meters
+      meters: meters,
+      player: player
     }).then(function(reply){
       rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
     }).catch(function(err){
@@ -208,7 +221,9 @@ async function sendCurrentMessage(){
     });
   });
 }
-*/
+window.sendCurrentMessage = sendCurrentMessage;
+window.sendCurrentMessage = sendCurrentMessage; // <-- make it visible to onsubmit
+
 
 window.sendCurrentMessage = sendCurrentMessage;
 window.GameUI = Object.assign(window.GameUI || {}, {

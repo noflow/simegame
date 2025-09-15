@@ -7,6 +7,18 @@ import { resolveLocation } from './schedule.js';
 import { buildKnowledge } from './knowledge.js';
 import { evaluateEvents, getFlags, getMeters, setMeters } from './events.js';
 
+function playerLine(npc, player){
+  const pid = player?.id || 'MC';
+  const pname = player?.name || pid;
+  let relTxt='';
+  try{
+    const rel = npc?.relations && npc.relations[pid];
+    if (rel && rel.type) relTxt = ` Relationship to user: ${rel.type}.`;
+  }catch(e){}
+  return `You are speaking to the human player "${pname}" (id "${pid}"). Treat the user as that person in your relationships.${relTxt}`;
+}
+
+
 function styleFromLocationPolicy(policy) {
   let extra = '';
   if (policy?.mode === 'qna') extra += ' Keep replies concise and Q&A focused. Avoid describing the environment unless asked.';
@@ -22,11 +34,11 @@ function personaFromMeters(meters) {
   return lines.join(' ');
 }
 
-function buildSystemPrompt({ npc, world, knowledge, personaNotes }) {
+function buildSystemPrompt({ npc, world, knowledge, personaNotes, player }) {
   const tone = Policy.stylePrompt(Policy.verbosity);
   const locText = world?.resolvedLocationName ? `You are currently at ${world.resolvedLocationName}.` : 'Your current location is unknown.';
-  return [
-    `You are the NPC "${npc?.name ?? 'Unknown'}" in a life-sim game.`,
+  return [`You are the NPC "${npc?.name ?? 'Unknown'}" in a life-sim game.`,
+    (player ? playerLine(npc, player) : ''),
     locText,
     `Honor schedules unless a dated meeting overrides them; after the meeting, resume normal schedule.`,
     `Facts:\n- ${knowledge.facts.join('\n- ')}`,
@@ -55,7 +67,7 @@ export async function respondToV2(userText, ctx) {
   const knowledge = buildKnowledge(npc, ctx.world, evRes.meters, evRes.flags);
   const personaNotes = personaFromMeters(evRes.meters);
 
-  const sys = buildSystemPrompt({ npc, world: ctx.world, knowledge, personaNotes });
+  const sys = buildSystemPrompt({ npc, world: ctx.world, knowledge, personaNotes, player: ctx.player });
   const history = await loadChat(npcId, Policy.maxHistory);
   const msgs = [
     { role: 'system', content: sys },
