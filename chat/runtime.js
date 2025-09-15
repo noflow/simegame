@@ -77,18 +77,29 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   // --- Fallback renderChat (safe) ---
   if (typeof window.renderChat !== 'function') {
     function escapeHtml(s){
-      var str = String(s||'');
-      var map = {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'};
+      var str = String(s || '');
+      var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
       return str.replace(/[&<>\"']/g, function(ch){ return map[ch]; });
     }
     function renderChat(){
       try{
-        var ov = document.getElementById('chatOverlay');
-        if (!ov) return;
-        var log = ov.querySelector('#chatLog');
+        var modal = document.getElementById('chatModal');
+        if (!modal) return;
+        var log = modal.querySelector('#chatLog');
         if (!log) return;
         var rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null);
-        if (!rel) { rel = { history: [], friendship: 0, romance: 0 }; if (typeof setRelationship==='function') try{ setRelationship(window.currentNpcId, rel); }catch(e){} }
+        if (!rel) { rel = { history: [], friendship: 0, romance: 0 }; if (typeof setRelationship==='function') { try{ setRelationship(window.currentNpcId, rel); }catch(e){} } }
+        if (!rel.history) rel.history = [];
+        log.innerHTML = rel.history.map(function(m){
+          var who = m.speaker || '';
+          var body = escapeHtml(m.text || '');
+          var cls = (who==='You' ? 'you' : 'npc');
+          return '<div class="msg '+cls+'"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
+        }).join('');
+        log.scrollTop = log.scrollHeight;
+      }catch(e){ console.warn('renderChat fallback failed:', e); }
+    }
+    window.renderChat = renderChat;; if (typeof setRelationship==='function') try{ setRelationship(window.currentNpcId, rel); }catch(e){} }
         if (!rel.history) rel.history = [];
         log.innerHTML = rel.history.map(function(m){
           var who = m.speaker || '';
