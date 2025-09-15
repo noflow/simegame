@@ -304,19 +304,8 @@
 
 <link rel="icon" href="./favicon.ico"> 
 <script src="./src/cosmos.js"></script>
-
-<script>
-// minimal stubs in case game boots before chat runtime
-if (!window.renderChat) { window.renderChat = function(){}; }
-if (!window.GameUI) { window.GameUI = {}; }
-if (!window.GameUI.renderChat) { window.GameUI.renderChat = window.renderChat; }
-if (!window.GameUI.startChat) { window.GameUI.startChat = function(npcId){ if (window.startChat) startChat(npcId); }; }
-if (!window.GameUI.closeChat) { window.GameUI.closeChat = function(){ if (window.closeChatModal) closeChatModal(); }; }
-</script>
-
-<script type="module" src="./chat/runtime.js?v=24"></script>
+<script type="module" src="./chat/runtime.js?v=25"></script>
 <script type="module" src="./src/main.js?v=21"></script> <!-- bump v to clear cache -->
-
 
 
 </body>
