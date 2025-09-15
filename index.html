@@ -318,5 +318,93 @@
   <script type="module" src="./src/ai/events.js"></script>
   <script type="module" src="./src/ai/router.v2.js"></script>
   <script type="module" src="./src/ai/boot-demo.js"></script>
-            </body>
+            <!-- Simegame AI Chat Hook (no fallback UI) -->
+      <script type="module">
+        import { respondToV2 } from "./src/ai/router.v2.js";
+
+        // Allow overriding selectors via global:
+        // window.AI_SELECTORS = { form: "#myForm", input: "#myInput", log: "#myLog", sendBtn: "#myBtn" }
+        const SEL = Object.assign({
+          form:    "#chat-form, form.chat, #message-form, .chat-form",
+          input:   "#chat-input, input[name='chat'], #message, #message-input, .chat-input, textarea",
+          log:     "#chat-log, #messages, .chat-log, .messages",
+          sendBtn: "#chat-send, .chat-send, button[type='submit']"
+        }, (window.AI_SELECTORS || {}));
+
+        function qsMulti(sel) {
+          for (const s of sel.split(",")) {
+            const el = document.querySelector(s.trim());
+            if (el) return el;
+          }
+          return null;
+        }
+
+        const form   = qsMulti(SEL.form);
+        const input  = qsMulti(SEL.input);
+        const logEl  = qsMulti(SEL.log);
+        const sendBtn= qsMulti(SEL.sendBtn);
+
+        function appendMessage({ role, text, npc }) {
+          if (!logEl) return;
+          const line = document.createElement("div");
+          line.className = `msg ${role}`;
+          line.textContent = (npc ? `[${npc}] ` : "") + text;
+          logEl.appendChild(line);
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function getActiveNPC() {
+          if (window.ActiveNPC) return window.ActiveNPC;
+          return { id:"lily", name:"Lily", relations:{ MC:{ type:"sister", strength:80 } } };
+        }
+
+        function getWorld() {
+          const W = window.WORLD_STATE || {};
+          if (W.currentDay == null) W.currentDay = 4;
+          if (!W.timeSegment) W.timeSegment = "evening";
+          W.locations = W.locations || { home:{name:"Home"}, coffee_shop:{name:"Bean Scene"} };
+          W.locationPolicies = W.locationPolicies || { coffee_shop:{ mode:"qna", avoidScene:true, maxWords:80 } };
+          return W;
+        }
+
+        async function handleSend(evt) {
+          if (evt) evt.preventDefault();
+          const text = input?.value?.trim();
+          if (!text) return;
+
+          const npc   = getActiveNPC();
+          const world = getWorld();
+
+          appendMessage({ role:"user", text });
+
+          try {
+            const reply = await respondToV2(text, {
+              world,
+              now: new Date().toLocaleString(),
+              npc,
+              meters: npc.meters || { friendship: 15, romance: 0 }
+            });
+            appendMessage({ role:"assistant", text: reply, npc: npc.name });
+          } catch (err) {
+            appendMessage({ role:"assistant", text: "⚠️ AI error: " + (err?.message || err) });
+          }
+
+          if (input) input.value = "";
+        }
+
+        // Wire up only if existing elements are present
+        if (form && input && logEl) {
+          form.addEventListener("submit", handleSend);
+          if (sendBtn) sendBtn.addEventListener("click", handleSend);
+        } else {
+          console.warn("[AI Hook] Existing chat elements not found. Set window.AI_SELECTORS to your selectors, e.g.:",
+                       '{ form:"#chatForm", input:"#chatInput", log:"#chatLog", sendBtn:"#sendBtn" }');
+        }
+
+        // Expose debug helper (sends using the detected elements)
+        window.AI = window.AI || {};
+        window.AI.send = handleSend;
+      </script>
+    
+</body>
 </html>
