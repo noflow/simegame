@@ -181,24 +181,17 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   function startChat(npcId){
     try{
       if (npcId) window.currentNpcId = npcId;
-      const ov = (typeof ensureModal==='function' ? ensureModal() : document.getElementById('chatOverlay'));
+      var ov = (typeof ensureModal==='function' ? ensureModal() : document.getElementById('chatOverlay'));
       if (!ov) { console.warn('startChat: #chatOverlay not found'); return; }
       ov.style.display = 'block';
       ov.removeAttribute('aria-hidden');
       // set chat title if NPC available
       try{
-        const npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : null);
-        const title = ov.querySelector('#chatTitle');
+        var npc = (typeof getNpcById==='function' ? getNpcById(window.currentNpcId) : null);
+        var title = ov.querySelector('#chatTitle');
         if (title && npc && npc.name) title.textContent = npc.name;
       }catch(e){}
-      const input = ov.querySelector('#chatInput');
-      if (input) input.focus();
-      if (typeof renderChat === 'function') renderChat();
-    }catch(e){ console.error('startChat error:', e); }
-  }
-      ov.style.display = 'block';
-      ov.removeAttribute('aria-hidden');
-      const input = ov.querySelector('#chatInput');
+      var input = ov.querySelector('#chatInput');
       if (input) input.focus();
       if (typeof renderChat === 'function') renderChat();
     }catch(e){ console.error('startChat error:', e); }
