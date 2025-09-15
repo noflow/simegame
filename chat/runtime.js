@@ -1,9 +1,39 @@
-// Chat runtime (v19) — single source of truth
+// Chat runtime (v20) — single entry; dynamic router import
 if (window.__CHAT_RUNTIME_LOADED__) {
   console.warn("♻️ Chat runtime already loaded — skipping.");
 } else {
   window.__CHAT_RUNTIME_LOADED__ = true;
   console.log("✅ Chat runtime loaded.");
+
+  // --- Fallback helpers (only if host hasn't defined them) ---
+  if (typeof window.ensureModal !== 'function') {
+    function ensureModal(){ return document.getElementById('chatOverlay'); }
+    window.ensureModal = ensureModal;
+  }
+
+  if (typeof window.renderChat !== 'function') {
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function renderChat(){
+      try{
+        const ov = document.getElementById('chatOverlay');
+        if (!ov) return;
+        const log = ov.querySelector('#chatLog');
+        if (!log) return;
+        const rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null);
+        if (!rel || !Array.isArray(rel.history)) return;
+        log.innerHTML = rel.history.map(function(m){
+          const who = m.speaker || '';
+          const body = escapeHtml(m.text || '');
+          const cls = (who==='You' ? 'you' : 'npc');
+          return '<div class="msg '+cls+'"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
+        }).join('');
+        log.scrollTop = log.scrollHeight;
+      }catch(e){ console.warn('renderChat fallback failed:', e); }
+    }
+    window.renderChat = renderChat;
+    window.GameUI = window.GameUI || {};
+    window.GameUI.renderChat = renderChat;
+  }
 
   // Lazy-load the AI router exactly once
   let __routerPromise = null;
