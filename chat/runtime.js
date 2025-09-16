@@ -156,80 +156,78 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     return __routerPromise;
   }
 
+  // --- Core sender (no async/await) ---
   function sendCurrentMessage(){
   var modal = document.getElementById('chatModal') || (typeof ensureModal === 'function' ? ensureModal() : null);
   var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
-  if (!input) return;
+    if (!input) return;
   var textVal = String(input.value || '').trim();
-  if (!textVal) return;
+    if (!textVal) return;
 
   var npc = null;
-  if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
-  else if (typeof getNpcById === 'function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
-  if (!npc && typeof window.currentNpcId === 'string') {
-    npc = { id: window.currentNpcId, name: window.currentNpcId };
-  }
+    if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
+    else if (typeof getNpcById === 'function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
+    if (!npc && typeof window.currentNpcId === 'string') { npc = { id: window.currentNpcId, name: window.currentNpcId }; }
 
-  // Ensure global targeting is aligned
-  if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id;
-  window.ActiveNPC = npc;
 
-  try {
-    if ((npc.id === 'lily' || /lily/i.test(npc.name || '')) && (!npc.relations || !npc.relations.MC)) {
-      npc.relations = Object.assign({}, npc.relations || {}, { MC: { type: 'sister', strength: 80 } });
-    }
-  } catch(e){}
+    // Ensure global targeting is aligned
+    if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id;
+    window.ActiveNPC = npc;
 
-  var rel = (typeof getRelationship === 'function' ? getRelationship(npc.id) : null) || { history: [], friendship: 0, romance: 0 };
-  if (!rel.history) rel.history = [];
-  rel.history.push({ speaker: 'You', text: textVal, ts: Date.now() });
-  if (typeof setRelationship === 'function') { try { setRelationship(npc.id, rel); } catch(e){} }
-  if (typeof renderChat === 'function') renderChat(); // optimistic echo
-  input.value = '';
+    try {
+      if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
+        npc.relations = Object.assign({}, npc.relations||{}, { MC: { type:'sister', strength:80 } });
+      }
+    } catch(e){}
 
-  var world = window.WORLD_STATE || null;
-  var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
-    .then(function(r){ return r.ok ? r.json() : {}; })
-    .catch(function(){ return {}; })
-  ).then(function(w){ return w || {}; });
+    var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
+    if (!rel.history) rel.history = [];
+    rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
+    if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
+    if (typeof renderChat==='function') renderChat(); // optimistic echo
+    input.value = '';
 
-  var player = {
-    id: (window.GameState && window.GameState.playerId) || 'MC',
-    name: (window.GameState && window.GameState.playerName) || 'MC'
-  };
+    var world = window.WORLD_STATE || null;
+    var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
+        .then(function(r){ return r.ok ? r.json() : {}; })
+        .catch(function(){ return {}; })
+    ).then(function(w){ return w || {}; });
 
-  Promise.all([loadWorld, getRespond()]).then(function(vals){
-    var w = vals[0];
-    var respondToV2 = vals[1];
-    if (w.currentDay == null && window.GameState && window.GameState.day) w.currentDay = window.GameState.day;
-
-    var meters = {
-      friendship: typeof getFriendship === 'function' ? getFriendship(npc.id) : (rel.friendship || 0),
-      romance: typeof getRomance === 'function' ? getRomance(npc.id) : (rel.romance || 0)
+    var player = {
+      id: (window.GameState && window.GameState.playerId) || 'MC',
+      name: (window.GameState && window.GameState.playerName) || 'MC'
     };
 
-    return respondToV2(textVal, {
-      world: w,
-      now: new Date().toLocaleString(),
-      npc: npc,
-      meters: meters,
-      player: player
-    }).then(function(reply){
-      var out = (reply && typeof reply === 'object' && reply.text) ? reply.text : reply;
-      if (!out) out = '…';
-      rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: out, ts: Date.now() });
-    }).catch(function(err){
-      console.error('AI router v2 error:', err);
-      rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
-    }).then(function(){
-      if (typeof setRelationship === 'function') { try { setRelationship(npc.id, rel); } catch(e){} }
-      if (window.GameState && window.GameState.saveState) window.GameState.saveState();
-      if (typeof renderChat === 'function') renderChat();
-    });
-  });
-}
-window.sendCurrentMessage = sendCurrentMessage;
+    Promise.all([loadWorld, getRespond()]).then(function(vals){
+      var w = vals[0];
+      var respondToV2 = vals[1];
+      if (w.currentDay == null && window.GameState && window.GameState.day) w.currentDay = window.GameState.day;
+      if (!w.timeSegment && window.GameState && window.GameState.time) w.timeSegment = window.GameState.time;
+      w.locations = w.locations || {};
 
+      var meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
+
+      return respondToV2(textVal, {
+        world: w,
+        now: new Date().toLocaleString(),
+        npc: npc,
+        meters: meters,
+        player: player
+      }).then(function(reply){
+        var out = (reply && typeof reply === 'object' && reply.text) ? reply.text : reply;
+        if (!out) out = '…';
+        rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });), text: out, ts: Date.now() });
+      }).catch(function(err){
+        console.error('AI router v2 error:', err);
+        rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });), text: '[AI error. Check settings/API key.]', ts: Date.now() });
+      }).then(function(){
+        if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
+        if (window.GameState && window.GameState.saveState) window.GameState.saveState();
+        if (typeof renderChat==='function') renderChat();
+      });
+    });
+  }
+  window.sendCurrentMessage = sendCurrentMessage;
 // --- Start chat (accepts NPC object or id) ---
 function startChat(npcOrId) {
   try {
