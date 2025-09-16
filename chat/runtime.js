@@ -158,17 +158,18 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
   // --- Core sender (no async/await) ---
   function sendCurrentMessage(){
-    var modal = document.getElementById('chatModal') || (typeof ensureModal==='function' ? ensureModal() : null);
-    var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
+  var modal = document.getElementById('chatModal') || (typeof ensureModal === 'function' ? ensureModal() : null);
+  var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
     if (!input) return;
-    var textVal = String(input.value || '').trim();
+  var textVal = String(input.value || '').trim();
     if (!textVal) return;
 
-    var npc = null;
+  var npc = null;
     if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
-    else if (typeof getNpcById==='function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
+    else if (typeof getNpcById === 'function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
     if (!npc && typeof window.currentNpcId === 'string') npc = { id: window.currentNpcId, name: window.currentNpcId };
-    \1
+  }
+
 
     // Ensure global targeting is aligned
     if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id;
