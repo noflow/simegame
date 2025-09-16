@@ -77,8 +77,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   if (typeof window.renderChat !== 'function') {
     function escapeHtml(s){
       var str = String(s || '');
-      var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"};
-      return str.replace(/[&<>\\\"']/g, function(ch){ return map[ch]; });
+      var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+      return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
     }
     function renderChat(){
       try{
