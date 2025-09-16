@@ -165,9 +165,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     if (!textVal) return;
 
   var npc = null;
-    if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
-    else if (typeof getNpcById === 'function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
-    if (!npc && typeof window.currentNpcId === 'string') npc = { id: window.currentNpcId, name: window.currentNpcId };
+  if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
+  else if (typeof getNpcById === 'function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
+  if (!npc && typeof window.currentNpcId === 'string') {
+    npc = { id: window.currentNpcId, name: window.currentNpcId };
   }
 
 
