@@ -86,7 +86,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         if (!modal) return;
         var log = modal.querySelector('#chatLog');
         if (!log) return;
-        var rel = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null);
+        var relId = window.currentNpcId || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
+        var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
         if (!rel) {
           rel = { history: [], friendship: 0, romance: 0 };
           if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel); } catch(e){} }
@@ -167,7 +168,11 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
     else if (typeof getNpcById==='function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
     if (!npc && typeof window.currentNpcId === 'string') npc = { id: window.currentNpcId, name: window.currentNpcId };
-    if (!npc) npc = { id: 'lily', name:'Lily Thompson'};
+    \1
+
+    // Ensure global targeting is aligned
+    if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id;
+    window.ActiveNPC = npc;
 
     try {
       if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
