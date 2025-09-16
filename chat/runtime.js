@@ -260,11 +260,11 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       if (input) input.focus();
       if (typeof renderChat === 'function') renderChat();
     }catch(e){ console.error('startChat error:', e); }
-  }
+  
   window.startChat = startChat;
   window.GameUI = window.GameUI || {};
   window.GameUI.startChat = startChat;
   window.GameUI.closeChat = closeChatModal;
   window.GameUI.renderChat = window.renderChat || function(){};
   window.GameUI.sendCurrentMessage = window.sendCurrentMessage;
-}
+
