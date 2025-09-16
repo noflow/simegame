@@ -216,10 +216,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       }).then(function(reply){
         var out = (reply && typeof reply === 'object' && reply.text) ? reply.text : reply;
         if (!out) out = '…';
-        rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });), text: out, ts: Date.now() });
+        rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: out, ts: Date.now() });
       }).catch(function(err){
         console.error('AI router v2 error:', err);
-        rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });), text: '[AI error. Check settings/API key.]', ts: Date.now() });
+        rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
       }).then(function(){
         if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
         if (window.GameState && window.GameState.saveState) window.GameState.saveState();
