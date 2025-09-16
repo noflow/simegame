@@ -158,17 +158,16 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
   // --- Core sender (no async/await) ---
   function sendCurrentMessage(){
-  var modal = document.getElementById('chatModal') || (typeof ensureModal === 'function' ? ensureModal() : null);
-  var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
+    var modal = document.getElementById('chatModal') || (typeof ensureModal === 'function' ? ensureModal() : null);
+    var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
     if (!input) return;
-  var textVal = String(input.value || '').trim();
+    var textVal = String(input.value || '').trim();
     if (!textVal) return;
 
-  var npc = null;
+    var npc = null;
     if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
     else if (typeof getNpcById === 'function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
     if (!npc && typeof window.currentNpcId === 'string') { npc = { id: window.currentNpcId, name: window.currentNpcId }; }
-
 
     // Ensure global targeting is aligned
     if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id;
@@ -228,68 +227,71 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     });
   }
   window.sendCurrentMessage = sendCurrentMessage;
-// --- Start chat (accepts NPC object or id) ---
-function startChat(npcOrId) {
-  try {
-    var npc = null;
-    if (npcOrId && typeof npcOrId === 'object') {
-      npc = npcOrId;
-    } else if (typeof getNpcById === 'function' && npcOrId) {
-      npc = getNpcById(npcOrId);
-    }
 
-    if (npc && npc.id) {
-      window.currentNpcId = npc.id;
-      window.ActiveNPC = npc;
-    } else if (!window.currentNpcId) {
-      window.currentNpcId = 'lily';
-    }
-
-    var modal = (typeof ensureModal === 'function' ? ensureModal() : document.getElementById('chatModal'));
-    if (!modal) {
-      console.warn('startChat: #chatModal not found');
-      return;
-    }
-
-    var wrap = modal.querySelector('.cosmosrp');
-    if (wrap) {
-      wrap.style.display = 'flex';
-    }
-
-    modal.removeAttribute('aria-hidden');
-
+  // --- Start chat (accepts NPC object or id) ---
+  function startChat(npcOrId) {
     try {
-      var relInit = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : null;
-      if (!relInit) {
-        relInit = { history: [], friendship: 0, romance: 0 };
-        if (typeof setRelationship === 'function') {
-          setRelationship(window.currentNpcId, relInit);
+      var npc = null;
+      if (npcOrId && typeof npcOrId === 'object') {
+        npc = npcOrId;
+      } else if (typeof getNpcById === 'function' && npcOrId) {
+        npc = getNpcById(npcOrId);
+      }
+
+      if (npc && npc.id) {
+        window.currentNpcId = npc.id;
+        window.ActiveNPC = npc;
+      } else if (!window.currentNpcId) {
+        window.currentNpcId = 'lily';
+      }
+
+      var modal = (typeof ensureModal === 'function' ? ensureModal() : document.getElementById('chatModal'));
+      if (!modal) {
+        console.warn('startChat: #chatModal not found');
+        return;
+      }
+
+      var wrap = modal.querySelector('.cosmosrp');
+      if (wrap) {
+        wrap.style.display = 'flex';
+      }
+
+      modal.removeAttribute('aria-hidden');
+
+      try {
+        var relInit = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : null;
+        if (!relInit) {
+          relInit = { history: [], friendship: 0, romance: 0 };
+          if (typeof setRelationship === 'function') {
+            setRelationship(window.currentNpcId, relInit);
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
 
-    try {
-      var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
-      var title = modal.querySelector('#chatTitle');
-      if (title && npc2 && npc2.name) {
-        title.textContent = npc2.name;
-      }
-    } catch (e) {}
+      try {
+        var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
+        var title = modal.querySelector('#chatTitle');
+        if (title && npc2 && npc2.name) {
+          title.textContent = npc2.name;
+        }
+      } catch (e) {}
 
-    var input = modal.querySelector('#chatInput');
-    if (input) input.focus();
+      var input = modal.querySelector('#chatInput');
+      if (input) input.focus();
 
-    if (typeof renderChat === 'function') renderChat();
+      if (typeof renderChat === 'function') renderChat();
 
-  } catch (e) {
-    console.error('startChat error:', e);
+    } catch (e) {
+      console.error('startChat error:', e);
+    }
   }
-}
 
-// Attach to global scope
-window.startChat = startChat;
-window.GameUI = window.GameUI || {};
-window.GameUI.startChat = startChat;
-window.GameUI.closeChat = closeChatModal;
-window.GameUI.renderChat = window.renderChat || function() {};
-window.GameUI.sendCurrentMessage = sendCurrentMessage; // fixed from window.sendCurrentMessage
+  // Attach to global scope
+  window.startChat = startChat;
+  window.GameUI = window.GameUI || {};
+  window.GameUI.startChat = startChat;
+  window.GameUI.closeChat = closeChatModal;
+  window.GameUI.renderChat = window.renderChat || function() {};
+  window.GameUI.sendCurrentMessage = sendCurrentMessage; // fixed
+
+} // <-- Added this closing brace to close the "else" block
