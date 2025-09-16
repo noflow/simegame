@@ -1,4 +1,4 @@
-// Chat runtime (v31) — full modal (#chatModal), ES5-compatible
+// Chat runtime (v32) — full modal (#chatModal), ES5-compatible
 if (window.__CHAT_RUNTIME_LOADED__) {
   console.warn("♻️ Chat runtime already loaded — skipping.");
 } else {
@@ -29,15 +29,15 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         '         <div class="status-row"><span class="label">Romance</span><span id="meterRomance">0</span></div>',
         '      </div>',
         '    </div>',
-        '    <form id="chatForm" class="cosmosrp-actions" style="display:flex;gap:8px;padding:12px;border-top:1px solid #1b222b">',
-        '      <input id="chatInput" autocomplete="off" placeholder="Say something..." style="flex:1">',
+        '    <form id="chatForm" novalidate class="cosmosrp-actions" style="display:flex;gap:8px;padding:12px;border-top:1px solid #1b222b">',
+        '      <input id="chatInput" type="text" autocomplete="off" placeholder="Say something..." style="flex:1">',
         '      <button id="sendBtn" type="submit" class="btn-primary">Send</button>',
         '    </form>',
         '  </div>',
         '</div>'
       ].join('');
       document.body.appendChild(modal);
-      // Wire form + send + enter
+      // Wire form + send + enter (keydown/keypress/keyup)
       var form = modal.querySelector('#chatForm');
       if (form) {
         form.addEventListener('submit', function(e){
@@ -53,13 +53,19 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         });
       }
       var inputEl = modal.querySelector('#chatInput');
+      function maybeSend(e){
+        var key = e.key || e.keyCode;
+        if (key === 'Enter' || key === 13) {
+          e.preventDefault();
+          if (typeof window.sendCurrentMessage === 'function') window.sendCurrentMessage();
+          return false;
+        }
+      }
       if (inputEl) {
-        inputEl.addEventListener('keydown', function(e){
-          var key = e.key || e.keyCode;
-          if (key === 'Enter' || key === 13) {
-            e.preventDefault();
-            if (typeof window.sendCurrentMessage === 'function') window.sendCurrentMessage();
-          }
+        inputEl.addEventListener('keydown', maybeSend);
+        inputEl.addEventListener('keypress', maybeSend);
+        inputEl.addEventListener('keyup', function(e){
+          if ((e.key || e.keyCode) === 'Enter' || (e.keyCode === 13)) e.preventDefault();
         });
       }
       return modal;
@@ -71,8 +77,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   if (typeof window.renderChat !== 'function') {
     function escapeHtml(s){
       var str = String(s || '');
-      var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
-      return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
+      var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"};
+      return str.replace(/[&<>\\\"']/g, function(ch){ return map[ch]; });
     }
     function renderChat(){
       try{
@@ -154,12 +160,13 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var modal = document.getElementById('chatModal') || (typeof ensureModal==='function' ? ensureModal() : null);
     var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
     if (!input) return;
-    var text = String(input.value || '').trim();
-    if (!text) return;
+    var textVal = String(input.value || '').trim();
+    if (!textVal) return;
 
     var npc = null;
     if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
-    else if (typeof getNpcById==='function') npc = getNpcById(window.currentNpcId);
+    else if (typeof getNpcById==='function' && window.currentNpcId) npc = getNpcById(window.currentNpcId);
+    if (!npc && typeof window.currentNpcId === 'string') npc = { id: window.currentNpcId, name: window.currentNpcId };
     if (!npc) npc = { id: 'lily', name:'Lily Thompson'};
 
     try {
@@ -168,10 +175,12 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       }
     } catch(e){}
 
-    var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : {history:[],friendship:0,romance:0});
+    var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
-    rel.history.push({ speaker:'You', text:text, ts: Date.now() });
+    rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
     if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
+    if (typeof renderChat==='function') renderChat(); // optimistic echo
+    input.value = '';
 
     var world = window.WORLD_STATE || null;
     var loadWorld = (world ? Promise.resolve(world) : fetch('./WORLD.json', { cache: 'no-store' })
@@ -193,20 +202,22 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
       var meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
 
-      return respondToV2(text, {
+      return respondToV2(textVal, {
         world: w,
         now: new Date().toLocaleString(),
         npc: npc,
         meters: meters,
         player: player
       }).then(function(reply){
-        rel.history.push({ speaker: npc.name, text: reply || '…', ts: Date.now() });
+        var out = (reply && typeof reply === 'object' && reply.text) ? reply.text : reply;
+        if (!out) out = '…';
+        rel.history.push({ speaker: npc.name || (npc.id||'NPC'), text: out, ts: Date.now() });
       }).catch(function(err){
         console.error('AI router v2 error:', err);
-        rel.history.push({ speaker: npc.name, text: '[AI error. Check settings/API key.]', ts: Date.now() });
+        rel.history.push({ speaker: npc.name || (npc.id||'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
       }).then(function(){
+        if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
         if (window.GameState && window.GameState.saveState) window.GameState.saveState();
-        if (input) input.value = '';
         if (typeof renderChat==='function') renderChat();
       });
     });
