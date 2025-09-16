@@ -1,4 +1,4 @@
-// Chat runtime (v30) — full modal (#chatModal), ES5-compatible
+// Chat runtime (v31) — full modal (#chatModal), ES5-compatible
 if (window.__CHAT_RUNTIME_LOADED__) {
   console.warn("♻️ Chat runtime already loaded — skipping.");
 } else {
@@ -71,8 +71,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   if (typeof window.renderChat !== 'function') {
     function escapeHtml(s){
       var str = String(s || '');
-      var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"};
-      return str.replace(/[&<>\\\"']/g, function(ch){ return map[ch]; });
+      var map = {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"};
+      return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
     }
     function renderChat(){
       try{
@@ -94,6 +94,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           var cls = (who === "You" ? "you" : "npc");
           html += '<div class="msg ' + cls + '"><strong>' + escapeHtml(who) + ':</strong> ' + body + '</div>';
         }
+        var mf = modal.querySelector('#meterFriend'); if (mf) mf.textContent = rel.friendship || 0;
+        var mr = modal.querySelector('#meterRomance'); if (mr) mr.textContent = rel.romance || 0;
         log.innerHTML = html;
         log.scrollTop = log.scrollHeight;
       }catch(e){ console.warn('renderChat fallback failed:', e); }
@@ -158,7 +160,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var npc = null;
     if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
     else if (typeof getNpcById==='function') npc = getNpcById(window.currentNpcId);
-    if (!npc) npc = { id: 'lily', name:'Lily'};
+    if (!npc) npc = { id: 'lily', name:'Lily Thompson'};
 
     try {
       if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
