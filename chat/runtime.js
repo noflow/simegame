@@ -1,3 +1,32 @@
+// === Chat relationship shim (always-on) ===
+(function(){
+  try {
+    if (typeof window === 'undefined') return;
+    window.__chatHistory = window.__chatHistory || {};
+    if (typeof window.getRel !== 'function') {
+      window.getRel = function(id){
+        var rel = null;
+        try { if (typeof getRelationship === 'function') rel = getRelationship(id); } catch(e){}
+        if (!rel) {
+          rel = window.__chatHistory[id] || { history: [], friendship: 0, romance: 0 };
+          window.__chatHistory[id] = rel;
+        }
+        if (!Array.isArray(rel.history)) rel.history = [];
+        return rel;
+      };
+    }
+    if (typeof window.setRel !== 'function') {
+      window.setRel = function(id, rel){
+        try { if (typeof setRelationship === 'function') return setRelationship(id, rel); } catch(e){}
+        window.__chatHistory[id] = rel || { history: [], friendship: 0, romance: 0 };
+      };
+    }
+  } catch(e) {
+    console.warn('chat relationship shim error:', e);
+  }
+})(); 
+// === End shim ===
+
 // Chat runtime (v32) — full modal (#chatModal), ES5-compatible
 if (window.__CHAT_RUNTIME_LOADED__) {
   console.warn("♻️ Chat runtime already loaded — skipping.");
@@ -71,26 +100,6 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       return modal;
     }
     window.ensureModal = ensureModal;
-
-  // --- Relationship helpers with fallback ---
-  function __ensureRelStore(){ if (!window.__chatHistory) window.__chatHistory = {}; return window.__chatHistory; }
-  function getRel(id){
-    var rel = null;
-    try { if (typeof getRelationship === 'function') rel = getRelationship(id); } catch(e){}
-    if (!rel) {
-      var store = __ensureRelStore();
-      rel = store[id] || { history: [], friendship: 0, romance: 0 };
-      store[id] = rel;
-    }
-    if (!Array.isArray(rel.history)) rel.history = [];
-    return rel;
-  }
-  function setRel(id, rel){
-    try { if (typeof setRelationship === 'function') return setRelationship(id, rel); } catch(e){}
-    var store = __ensureRelStore();
-    store[id] = rel || { history: [], friendship: 0, romance: 0 };
-  }
-
   }
 
   // --- Fallback renderChat (safe) ---
@@ -107,10 +116,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         var log = modal.querySelector('#chatLog');
         if (!log) return;
         var relId = window.currentNpcId || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
-        var rel = getRel(relId); if (!rel) rel = getRel(relId);
+        var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
         if (!rel) {
           rel = { history: [], friendship: 0, romance: 0 };
-          try { setRel(window.currentNpcId, rel); } catch(e){}
+          if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel); } catch(e){} }
         }
         if (!rel.history) rel.history = [];
         var html = "";
@@ -139,25 +148,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var wrap = modal.querySelector('.cosmosrp');
     if (wrap) wrap.style.display = 'none';
     modal.setAttribute('aria-hidden','true');
-    
-      // Seed greeting if first time chatting with this NPC (with fallback store)
-      try {
-        var rel0 = getRel(window.currentNpcId);
-        if (!rel0.history || rel0.history.length === 0) {
-          var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
-          var greetText = null;
-          try {
-            var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
-            greetText = (g && (g.work || g.home || g.default || g.intro)) || (npc0.greeting || null);
-          } catch(e){}
-          if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
-          rel0.history = Array.isArray(rel0.history) ? rel0.history : [];
-          rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
-          setRel(window.currentNpcId, rel0);
-        }
-      } catch (e) { console.warn('greeting-seed error:', e); }
-
-      var input = modal.querySelector('#chatInput');
+    var input = modal.querySelector('#chatInput');
     if (input) input.blur();
   }
   window.closeChatModal = closeChatModal;
@@ -217,13 +208,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       }
     } catch(e){}
 
-    var rel = getRel(npc.id) || {history:[],friendship:0,romance:0};
+    var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
     rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
-    try { setRel(npc.id, rel); } catch(e){}
-    try { var __input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput'); if (__input) __input.value = ''; } catch(e){}
-    try { if (typeof renderChat==='function') renderChat(); } catch(e){}
-    try { setRel(npc.id, rel); } catch(e){}
+    if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
     if (typeof renderChat==='function') renderChat(); // optimistic echo
     input.value = '';
 
@@ -261,7 +249,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         console.error('AI router v2 error:', err);
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
       }).then(function(){
-        try { setRel(npc.id, rel); } catch(e){}
+        if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
         if (window.GameState && window.GameState.saveState) window.GameState.saveState();
         if (typeof renderChat==='function') renderChat();
       });
@@ -316,24 +304,6 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           title.textContent = npc2.name;
         }
       } catch (e) {}
-
-      
-      // Seed greeting if first time chatting with this NPC (with fallback store)
-      try {
-        var rel0 = getRel(window.currentNpcId);
-        if (!rel0.history || rel0.history.length === 0) {
-          var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
-          var greetText = null;
-          try {
-            var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
-            greetText = (g && (g.work || g.home || g.default || g.intro)) || (npc0.greeting || null);
-          } catch(e){}
-          if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
-          rel0.history = Array.isArray(rel0.history) ? rel0.history : [];
-          rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
-          setRel(window.currentNpcId, rel0);
-        }
-      } catch (e) { console.warn('greeting-seed error:', e); }
 
       var input = modal.querySelector('#chatInput');
       if (input) input.focus();
