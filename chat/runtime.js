@@ -58,50 +58,6 @@
 })(); 
 // === End Chat Debug ===
 
-
-// === Relationship store shim (back-compat) ===
-(function(){
-  try{
-    if (typeof window === 'undefined') return;
-    // simple persisted store using localStorage
-    var LS_KEY = 'chat_rel_v1';
-    function loadStore(){
-      try{ return JSON.parse(localStorage.getItem(LS_KEY)||'{}') || {}; }catch(e){ return {}; }
-    }
-    function saveStore(obj){
-      try{ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }catch(e){}
-    }
-    var store = loadStore();
-
-    if (typeof window.getRelationship !== 'function'){
-      window.getRelationship = function(id){
-        var key = String(id||'default');
-        if (!store[key]) store[key] = { history: [], friendship: 0, romance: 0 };
-        return store[key];
-      };
-    }
-    if (typeof window.setRelationship !== 'function'){
-      window.setRelationship = function(id, rel){
-        var key = String(id||'default');
-        store[key] = Object.assign({history:[],friendship:0,romance:0}, rel||{});
-        saveStore(store);
-        return store[key];
-      };
-    }
-    // Legacy helper for older callers
-    if (typeof window.appendMsgToLog !== 'function'){
-      window.appendMsgToLog = function(who, text){
-        try{
-          var id = window.currentNpcId || 'default';
-          var rel = window.getRelationship(id);
-          rel.history.push({ speaker: String(who||'You'), text: String(text||''), ts: Date.now() });
-          window.setRelationship(id, rel);
-          if (typeof window.renderChat === 'function') window.renderChat();
-        }catch(e){ console.warn('appendMsgToLog shim error', e); }
-      };
-    }
-  }catch(e){ console.warn('rel shim init error', e); }
-})();
 // === Chat relationship shim (always-on) ===
 (function(){
   try {
@@ -405,19 +361,6 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           }
         }
       } catch (e) {}
-      // Auto-greet if first open and no history yet
-      try{
-        var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
-        var rel2 = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : {history:[], friendship:0, romance:0};
-        if (rel2 && Array.isArray(rel2.history) && rel2.history.length === 0 && npc2){
-          var greet = (npc2.greetings && (npc2.greetings.home || npc2.greetings.casual)) || '';
-          if (greet){
-            rel2.history.push({ speaker: npc2.name || (npc2.id || 'NPC'), text: greet, ts: Date.now() });
-            if (typeof setRelationship === 'function') setRelationship(window.currentNpcId, rel2);
-          }
-        }
-      }catch(_egreet){}
-
 
       try {
         var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
@@ -446,3 +389,150 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.GameUI.sendCurrentMessage = sendCurrentMessage; // fixed
 
 } // <-- Added this closing brace to close the "else" block
+
+
+// === IndexedDB Relationship Store Shim (IDB-backed) ===
+(function(){
+  if (window.__REL_STORE_PATCHED__) return;
+  window.__REL_STORE_PATCHED__ = true;
+
+  // Simple IDB helper
+  const DB_NAME = 'SimegameDB';
+  const DB_VER = 1;
+  const STORE_REL = 'relationships';
+
+  const _cache = Object.create(null);
+  let _dbPromise = null;
+
+  function openDB(){
+    if (_dbPromise) return _dbPromise;
+    _dbPromise = new Promise((resolve, reject)=>{
+      try{
+        const req = indexedDB.open(DB_NAME, DB_VER);
+        req.onupgradeneeded = function(e){
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE_REL)){
+            db.createObjectStore(STORE_REL);
+          }
+        };
+        req.onsuccess = function(){ resolve(req.result); };
+        req.onerror = function(){ reject(req.error || new Error('IDB open failed')); };
+      }catch(e){ reject(e); }
+    });
+    return _dbPromise;
+  }
+
+  async function idbGet(store, key){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      try{
+        const tx = db.transaction(store, 'readonly');
+        const os = tx.objectStore(store);
+        const rq = os.get(key);
+        rq.onsuccess = ()=> resolve(rq.result);
+        rq.onerror = ()=> reject(rq.error || new Error('IDB get failed'));
+      }catch(e){ reject(e); }
+    });
+  }
+
+  async function idbSet(store, key, value){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      try{
+        const tx = db.transaction(store, 'readwrite');
+        const os = tx.objectStore(store);
+        const rq = os.put(value, key);
+        rq.onsuccess = ()=> resolve(true);
+        rq.onerror = ()=> reject(rq.error || new Error('IDB put failed'));
+      }catch(e){ reject(e); }
+    });
+  }
+
+  // Public RelStore
+  const RelStore = {
+    async preload(npcId){
+      try{
+        if (_cache[npcId] !== undefined) return;
+        const rel = await idbGet(STORE_REL, npcId);
+        _cache[npcId] = rel || { id: npcId, history: [] };
+      }catch(e){
+        console.warn('RelStore.preload error', e);
+        if (_cache[npcId] === undefined) _cache[npcId] = { id: npcId, history: [] };
+      }
+    },
+    getSync(npcId){
+      return _cache[npcId] || { id: npcId, history: [] };
+    },
+    async set(npcId, rel){
+      _cache[npcId] = rel;
+      try{ await idbSet(STORE_REL, npcId, rel); }catch(e){ console.warn('RelStore.set failed', e); }
+    }
+  };
+  window.RelStore = RelStore;
+
+  // Back-compat: getRelationship / setRelationship use the cache synchronously.
+  // Ensure callers have called RelStore.preload(npcId) first (we'll patch startChat to do it).
+  if (typeof window.getRelationship !== 'function'){
+    window.getRelationship = function(npcId){
+      return RelStore.getSync(npcId);
+    };
+  }
+  if (typeof window.setRelationship !== 'function'){
+    window.setRelationship = function(npcId, rel){
+      RelStore.set(npcId, rel);
+    };
+  }
+
+  // Back-compat: appendMsgToLog(who, text) helper
+  if (typeof window.appendMsgToLog !== 'function'){
+    window.appendMsgToLog = function(who, text){
+      try{
+        const npcId = (window.currentNpcId && window.currentNpcId.id) || window.currentNpcId || 'unknown';
+        const rel = RelStore.getSync(npcId);
+        if (!rel.history) rel.history = [];
+        rel.history.push({ speaker: who, text: String(text) });
+        RelStore.set(npcId, rel);
+        try{ window.renderChat && window.renderChat(); }catch(_e){}
+        try{ window.ChatDebug && ChatDebug.log('appendMsgToLog', {who: who, text: text}); }catch(_e){}
+      }catch(e){
+        console.warn('appendMsgToLog error', e);
+      }
+    };
+  }
+
+  // Patch startChat to ensure preload + greeting-on-first-open
+  (function patchStartChat(){
+    if (window.__START_CHAT_PATCHED__) return;
+    if (typeof window.startChat !== 'function') return; // will try again later
+    window.__START_CHAT_PATCHED__ = true;
+
+    const _orig = window.startChat;
+    window.startChat = function(npcOrId){
+      // Ensure preload occurs even if caller doesn't await
+      (async function(){
+        try{
+          const npc = (typeof npcOrId === 'object' && npcOrId) ? npcOrId : (window.getNPCById ? window.getNPCById(npcOrId) : { id: String(npcOrId) });
+          await RelStore.preload(npc.id);
+          const rel = RelStore.getSync(npc.id);
+          // Auto-greeting if empty
+          if (!rel.history || rel.history.length === 0){
+            // Choose greeting
+            const g = (npc && npc.greetings) ? (npc.greetings.home || npc.greetings.casual || null) : null;
+            if (g){
+              rel.history = rel.history || [];
+              rel.history.push({ speaker: npc.name || 'NPC', text: g });
+              await RelStore.set(npc.id, rel);
+            }
+          }
+          // Re-render after preload/greeting
+          try{ window.renderChat && window.renderChat(); }catch(_e){}
+        }catch(e){
+          console.warn('startChat preload failed', e);
+        }
+      })();
+      // Call original synchronous function immediately to open UI/modal
+      try{ return _orig.apply(this, arguments); }catch(e){ console.warn('startChat orig failed', e); }
+    };
+  })();
+
+})(); // end IDB shim
