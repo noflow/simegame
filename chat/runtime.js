@@ -389,3 +389,32 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.GameUI.sendCurrentMessage = sendCurrentMessage; // fixed
 
 } // <-- Added this closing brace to close the "else" block
+
+
+// === Back-compat: appendMsgToLog shim ===
+// Some older UIs call appendMsgToLog(who, text). Provide a safe shim that
+// writes into the relationship history and re-renders the chat.
+(function(){
+  try{
+    if (typeof window.appendMsgToLog !== 'function') {
+      window.appendMsgToLog = function(who, text){
+        try{
+          var modal = document.getElementById('chatModal') || (typeof ensureModal==='function' ? ensureModal() : null);
+          var npc = (window.ActiveNPC && window.ActiveNPC.id) ? window.ActiveNPC
+                    : (typeof getNpcById==='function' && window.currentNpcId ? getNpcById(window.currentNpcId) : null);
+          if (!npc && typeof window.currentNpcId === 'string') npc = { id: window.currentNpcId, name: window.currentNpcId };
+          var relId = (npc && npc.id) || window.currentNpcId || 'lily';
+          var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
+          if (!rel) { rel = { history: [], friendship: 0, romance: 0 }; if (typeof setRelationship==='function'){ try{ setRelationship(relId, rel); }catch(_e){} } }
+          if (!Array.isArray(rel.history)) rel.history = [];
+          var speaker = String(who || '').trim() || 'You';
+          var body = String(text || '').trim();
+          rel.history.push({ speaker: speaker, text: body, ts: Date.now() });
+          if (typeof setRelationship==='function'){ try{ setRelationship(relId, rel); }catch(_e){} }
+          if (typeof renderChat === 'function') renderChat();
+        }catch(e){ console.warn('appendMsgToLog shim error:', e); }
+      };
+      try{ window.ChatDebug && ChatDebug.log('appendMsgToLog shim installed'); }catch(_e){}
+    }
+  }catch(e){ /* no-op */ }
+})();
