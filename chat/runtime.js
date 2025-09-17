@@ -176,8 +176,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       var cls = (String(who).toLowerCase() === 'you') ? 'you' : 'npc';
       div.className = 'msg ' + cls;
       div.innerHTML = '<div class="who">' + (who || '') + '</div><div class="body">' + String(text || '').replace(/[&<>"]/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }
-  // ✅ Ensure appendMsgToLog is available globally for callers like sendCurrentMessage
-  try { if (!window.appendMsgToLog) window.appendMsgToLog = appendMsgToLog; } catch(_e) {}
+// ✅ Ensure appendMsgToLog is available globally for callers like sendCurrentMessage
+try { if (!window.appendMsgToLog) window.appendMsgToLog = appendMsgToLog; } catch(_e) {}
 [s])) + '</div>';
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
