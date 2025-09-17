@@ -109,7 +109,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         '  <div class="cosmosrp-card" style="width:min(1100px,96vw);max-height:90vh;border:1px solid #1b222b;border-radius:14px;overflow:hidden;background:var(--panel)">',
         '    <div class="cosmosrp-head" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1b222b">',
         '      <strong id="chatTitle">Chat</strong>',
-        '      <button id="chatClose" data-chat-close class="btn-ghost">Close</button>',
+        '      <div class="row" style="gap:8px">' +
+'        <button id="chatClear" class="btn-ghost">Clear</button>' +
+'        <button id="chatClose" data-chat-close class="btn-ghost">Close</button>' +
+'      </div>',
         '    </div>',
         '    <div class="cosmosrp-body" style="display:flex;gap:10px;padding:12px;min-height:420px">',
         '      <div id="chatLog" class="cosmosrp-log" style="flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;background:#0d0f13;border:1px solid #1b222b;border-radius:10px;padding:10px"></div>',
@@ -142,6 +145,25 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           e.preventDefault();
           if (typeof window.sendCurrentMessage === 'function') window.sendCurrentMessage();
         });
+      var clearBtn = modal.querySelector('#chatClear');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', function(e){
+          e.preventDefault();
+          try{ window.ChatDebug && ChatDebug.log('chatClear click'); }catch(_e){}
+          try {
+            var id = (typeof window.currentNpcId==='object' ? window.currentNpcId.id : window.currentNpcId) || (window.ActiveNPC && window.ActiveNPC.id);
+            if (!id) return;
+            var blank = { id: id, history: [], friendship: 0, romance: 0 };
+            if (window.RelStore && typeof window.RelStore.set==='function') {
+              window.RelStore.set(id, blank).then(function(){ if (typeof renderChat==='function') renderChat(); });
+            } else if (typeof setRelationship==='function') {
+              setRelationship(id, blank);
+              if (typeof renderChat==='function') renderChat();
+            }
+          } catch(e){ console.warn('chatClear failed', e); }
+        });
+      }
+
       }
       var inputEl = modal.querySelector('#chatInput');
       function maybeSend(e){
@@ -337,7 +359,7 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
       }
 
       if (npc && npc.id) {
-        window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
+        window.currentNpcId = (npc && npc.id) || npc;.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
         window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
       } else if (!window.currentNpcId) {
         window.currentNpcId = 'lily';
@@ -469,10 +491,13 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
     },
     async set(npcId, rel){
       _cache[npcId] = rel;
-      try{ await idbSet(STORE_REL, npcId, rel); }catch(e){ console.warn('RelStore.set failed', e); }
+      try{ await idbSet(STORE_REL, npcId, rel);
+        try { if (window.RelBC) window.RelBC.postMessage({type:'rel:update', id: npcId}); } catch(_e){};
+      }catch(e){ console.warn('RelStore.set failed', e); }
     }
   };
   window.RelStore = RelStore;
+  try { window.RelBC = window.RelBC || new BroadcastChannel('simegame_chat'); } catch(_e) { window.RelBC = null; }
 
   // Back-compat: getRelationship / setRelationship use the cache synchronously.
   // Ensure callers have called RelStore.preload(npcId) first (we'll patch startChat to do it).
@@ -540,4 +565,19 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
     };
   })();
 
+  try {
+    if (window.RelBC && !window.__REL_BC_BOUND__) {
+      window.__REL_BC_BOUND__ = true;
+      window.RelBC.onmessage = function(ev){
+        var d = ev && ev.data || {};
+        if (d.type==='rel:update'){
+          var cur = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId);
+          if (cur && cur === d.id) {
+            // reload from IDB and re-render
+            try { window.RelStore.preload(cur).then(function(){ if (typeof renderChat==='function') renderChat(); }); } catch(_e){}
+          }
+        }
+      };
+    }
+  } catch(_e){}
 })(); // end IDB shim
