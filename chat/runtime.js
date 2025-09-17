@@ -1,4 +1,23 @@
 // === Chat relationship shim (always-on) + Debug v35 ===
+// ✅ Safety bootstrap for older builds or mixed versions
+if (typeof window !== 'undefined' && typeof window.appendMsgToLog !== 'function') {
+  window.appendMsgToLog = function(who, text){
+    try{
+      var modal = document.getElementById('chatModal');
+      if (!modal && typeof window.ensureModal === 'function') modal = window.ensureModal();
+      var log = modal && modal.querySelector ? modal.querySelector('#chatLog') : null;
+      if (!log) return;
+      var div = document.createElement('div');
+      var cls = (String(who).toLowerCase() === 'you') ? 'you' : 'npc';
+      div.className = 'msg ' + cls;
+      var esc = function(s){ return String(s||'').replace(/[&<>"]/g, function(ch){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]); }); };
+      div.innerHTML = '<div class="who">' + esc(who||'') + '</div><div class="text">' + esc(text||'') + '</div>';
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    } catch(e){ try{ console.warn('appendMsgToLog bootstrap error', e); }catch(_e){} }
+  };
+}
+
 (function(){
   try {
     if (typeof window === 'undefined') return;
@@ -156,7 +175,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       var div = document.createElement('div');
       var cls = (String(who).toLowerCase() === 'you') ? 'you' : 'npc';
       div.className = 'msg ' + cls;
-      div.innerHTML = '<div class="who">' + (who || '') + '</div><div class="body">' + String(text || '').replace(/[&<>"]/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[s])) + '</div>';
+      div.innerHTML = '<div class="who">' + (who || '') + '</div><div class="body">' + String(text || '').replace(/[&<>"]/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }
+  // ✅ Ensure appendMsgToLog is available globally for callers like sendCurrentMessage
+  try { if (!window.appendMsgToLog) window.appendMsgToLog = appendMsgToLog; } catch(_e) {}
+[s])) + '</div>';
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
       try{ window.ChatDebug && ChatDebug.log('appendMsgToLog', {who: who, text: text}); }catch(_e){}
