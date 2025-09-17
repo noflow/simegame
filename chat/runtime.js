@@ -1,30 +1,18 @@
-// === Chat Debug Overlay & Logger (auto) ===
+// === Chat relationship shim (always-on) + Debug v35 ===
 (function(){
   try {
     if (typeof window === 'undefined') return;
-    // Enable when ?chatdebug=1 or localStorage.CHAT_DEBUG === '1'
+    // v35 tag
+    window.__CHAT_RUNTIME_BUILD = "v35-debug-" + (new Date()).toISOString();
+    // Debug overlay (toggle via ?chatdebug=1 or localStorage.CHAT_DEBUG='1')
     var q = (location && location.search || "");
     var enabled = /\bchatdebug=1\b/.test(q) || (function(){ try { return localStorage.getItem('CHAT_DEBUG') === '1'; } catch(e){ return false; }})();
-    window.__CHAT_RUNTIME_BUILD = (window.__CHAT_RUNTIME_BUILD || "v34-debug") + "-" + (new Date()).toISOString();
     function ensureDbg(){
       var el = document.getElementById('chatDebug');
       if (el) return el;
       el = document.createElement('div');
       el.id = 'chatDebug';
-      el.style.position = 'fixed';
-      el.style.right = '10px';
-      el.style.bottom = '10px';
-      el.style.width = 'min(420px, 80vw)';
-      el.style.maxHeight = '40vh';
-      el.style.overflow = 'auto';
-      el.style.zIndex = '99999';
-      el.style.font = '12px/1.4 monospace';
-      el.style.background = 'rgba(0,0,0,0.8)';
-      el.style.color = '#0f0';
-      el.style.border = '1px solid #0f0';
-      el.style.borderRadius = '8px';
-      el.style.padding = '8px';
-      el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.4)';
+      el.style.cssText = 'position:fixed;right:10px;bottom:10px;width:min(420px,80vw);max-height:40vh;overflow:auto;z-index:99999;font:12px/1.4 monospace;background:rgba(0,0,0,0.8);color:#0f0;border:1px solid #0f0;border-radius:8px;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,0.4)';
       el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><strong>Chat Debug</strong><button id="chatDebugClose" style="background:#111;color:#0f0;border:1px solid #0f0;border-radius:4px;padding:2px 6px;cursor:pointer">×</button></div><pre id="chatDebugLog" style="white-space:pre-wrap;margin:0"></pre>';
       document.body.appendChild(el);
       var btn = el.querySelector('#chatDebugClose');
@@ -33,16 +21,12 @@
     }
     function logLine(msg, data){
       var s = "[" + (new Date()).toLocaleTimeString() + "] " + String(msg);
-      if (data !== undefined) {
-        try { s += " " + JSON.stringify(data); } catch(e){}
-      }
+      if (data !== undefined) { try { s += " " + JSON.stringify(data); } catch(e){} }
       console.debug("%c[CHAT]", "color:#0a0", s, data||"");
       if (!enabled) return;
       var wrap = ensureDbg();
       var pre = wrap.querySelector('#chatDebugLog');
-      if (pre) {
-        pre.textContent = (pre.textContent + (pre.textContent ? "\n" : "") + s).slice(-8000);
-      }
+      if (pre) pre.textContent = (pre.textContent + (pre.textContent? "\n":"") + s).slice(-8000);
     }
     window.ChatDebug = {
       enable: function(){ try { localStorage.setItem('CHAT_DEBUG','1'); } catch(e){} enabled = true; logLine("Chat debug enabled"); },
@@ -50,18 +34,7 @@
       log: logLine,
       build: function(){ return window.__CHAT_RUNTIME_BUILD; }
     };
-    // banner
-    logLine("Chat runtime loaded", { build: window.__CHAT_RUNTIME_BUILD });
-  } catch(e){
-    console.warn("ChatDebug init error", e);
-  }
-})(); 
-// === End Chat Debug ===
-
-// === Chat relationship shim (always-on) ===
-(function(){
-  try {
-    if (typeof window === 'undefined') return;
+    // Relationship shim
     window.__chatHistory = window.__chatHistory || {};
     if (typeof window.getRel !== 'function') {
       window.getRel = function(id){
@@ -81,11 +54,12 @@
         window.__chatHistory[id] = rel || { history: [], friendship: 0, romance: 0 };
       };
     }
+    logLine("Chat runtime loaded", { build: window.__CHAT_RUNTIME_BUILD });
   } catch(e) {
-    console.warn('chat relationship shim error:', e);
+    console.warn('chat relationship shim/debug error', e);
   }
 })(); 
-// === End shim ===
+// === End v35 shims ===
 
 // Chat runtime (v32) — full modal (#chatModal), ES5-compatible
 if (window.__CHAT_RUNTIME_LOADED__) {
@@ -127,6 +101,15 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       ].join('');
       document.body.appendChild(modal);
       try { window.ChatDebug && ChatDebug.log('ensureModal: modal created'); } catch(e){}
+      try {
+        var style = document.getElementById('chatMsgStyles');
+        if (!style){
+          style = document.createElement('style');
+          style.id = 'chatMsgStyles';
+          style.textContent = '.cosmosrp-log{background:var(--panel,rgba(255,255,255,0.02));} .cosmosrp-log .msg{display:flex;gap:8px;margin:8px 0;padding:8px;border-radius:8px;border:1px solid #1b222b} .cosmosrp-log .msg.you{background:rgba(0,128,0,0.08)} .cosmosrp-log .msg.npc{background:rgba(0,0,128,0.08)} .cosmosrp-log .msg .who{font-weight:bold;min-width:64px} .cosmosrp-log .msg .body{white-space:pre-wrap;}';
+          document.head.appendChild(style);
+        }
+      } catch(e){}
 
       // Wire form + send + enter (keydown/keypress/keyup)
       var form = modal.querySelector('#chatForm');
@@ -162,6 +145,26 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       return modal;
     }
     window.ensureModal = ensureModal;
+
+  // --- Direct DOM append fallback (ensures messages always show) ---
+  function appendMsgToLog(who, text){
+    try {
+      var modal = document.getElementById('chatModal') || (typeof ensureModal === 'function' ? ensureModal() : null);
+      if (!modal) return;
+      var log = modal.querySelector('#chatLog');
+      if (!log) return;
+      var div = document.createElement('div');
+      var cls = (String(who).toLowerCase() === 'you') ? 'you' : 'npc';
+      div.className = 'msg ' + cls;
+      div.innerHTML = '<div class="who">' + (who || '') + '</div><div class="body">' + String(text || '').replace(/[&<>"]/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[s])) + '</div>';
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+      try{ window.ChatDebug && ChatDebug.log('appendMsgToLog', {who: who, text: text}); }catch(_e){}
+    } catch(e){
+      console.warn('appendMsgToLog error', e);
+    }
+  }
+
   }
 
   // --- Fallback renderChat (safe) ---
@@ -171,7 +174,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
       return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
     }
-    function renderChat(){ try{ window.ChatDebug && ChatDebug.log('renderChat start', {npcId: window.currentNpcId}); }catch(_e){}
+    function renderChat(){
       try{
         var modal = document.getElementById('chatModal');
         if (!modal) return;
@@ -210,10 +213,28 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var wrap = modal.querySelector('.cosmosrp');
     if (wrap) wrap.style.display = 'none';
     modal.setAttribute('aria-hidden','true');
-    var input = modal.querySelector('#chatInput');
+    
+      // Seed greeting if first time chatting
+      try {
+        var rel0 = (typeof getRel==='function' ? getRel(window.currentNpcId) : null) || { history: [], friendship: 0, romance: 0 };
+        if (!Array.isArray(rel0.history)) rel0.history = [];
+        if (rel0.history.length === 0) {
+          var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
+          var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
+          var greetText = (g && (g.work || g.home || g.default || g.intro || g.casual)) || (npc0.greeting || null);
+          if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
+          appendMsgToLog(npc0.name || (npc0.id || 'NPC'), String(greetText));
+          rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
+          try { if (typeof setRel==='function') setRel(window.currentNpcId, rel0); } catch(e){}
+          try{ window.ChatDebug && ChatDebug.log('greeting seeded', {npcId:npc0.id, greet: greetText}); }catch(_e){}
+        } else {
+          try{ window.ChatDebug && ChatDebug.log('greeting skipped (history exists)', {len: rel0.history.length}); }catch(_e){}
+        }
+      } catch(e){ try{ window.ChatDebug && ChatDebug.log('greeting error', {err: String(e && (e.stack || e))}); }catch(_e){} }
+
+      var input = modal.querySelector('#chatInput');
     if (input) input.blur();
   }
-  try{ window.ChatDebug && ChatDebug.log('renderChat end'); }catch(_e){}
   window.closeChatModal = closeChatModal;
 
   if (!window.__chatCloseWired) {
@@ -263,7 +284,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
     // Ensure global targeting is aligned
     if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
-    window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
+    window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id: npc && npc.id, name: npc && npc.name}); }catch(_e){}
 
     try {
       if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
@@ -273,8 +294,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
     var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
-    try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: push user msg', {text: textVal}); }catch(_e){}
     rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
+    appendMsgToLog('You', textVal);
     if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
     if (typeof renderChat==='function') renderChat(); // optimistic echo
     input.value = '';
@@ -309,9 +330,12 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       }).then(function(reply){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 done', {reply: (reply && reply.text) ? reply.text : reply}); }catch(_e){}
         var out = (reply && typeof reply === 'object' && reply.text) ? reply.text : reply;
         if (!out) out = '…';
+        appendMsgToLog(npc.name || (npc.id || 'NPC'), out);
+        appendMsgToLog(npc.name || (npc.id || 'NPC'), '[AI error. Check settings/API key.]');
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: out, ts: Date.now() });
       }).catch(function(err){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 error', {error: String(err && (err.stack || err))}); }catch(_e){}
         console.error('AI router v2 error:', err);
+        appendMsgToLog(npc.name || (npc.id || 'NPC'), '[AI error. Check settings/API key.]');
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
       }).then(function(){
         if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
@@ -334,7 +358,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
       if (npc && npc.id) {
         window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
-        window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
+        window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id: npc && npc.id, name: npc && npc.name}); }catch(_e){}
       } else if (!window.currentNpcId) {
         window.currentNpcId = 'lily';
       }
@@ -369,6 +393,25 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           title.textContent = npc2.name;
         }
       } catch (e) {}
+
+      
+      // Seed greeting if first time chatting
+      try {
+        var rel0 = (typeof getRel==='function' ? getRel(window.currentNpcId) : null) || { history: [], friendship: 0, romance: 0 };
+        if (!Array.isArray(rel0.history)) rel0.history = [];
+        if (rel0.history.length === 0) {
+          var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
+          var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
+          var greetText = (g && (g.work || g.home || g.default || g.intro || g.casual)) || (npc0.greeting || null);
+          if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
+          appendMsgToLog(npc0.name || (npc0.id || 'NPC'), String(greetText));
+          rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
+          try { if (typeof setRel==='function') setRel(window.currentNpcId, rel0); } catch(e){}
+          try{ window.ChatDebug && ChatDebug.log('greeting seeded', {npcId:npc0.id, greet: greetText}); }catch(_e){}
+        } else {
+          try{ window.ChatDebug && ChatDebug.log('greeting skipped (history exists)', {len: rel0.history.length}); }catch(_e){}
+        }
+      } catch(e){ try{ window.ChatDebug && ChatDebug.log('greeting error', {err: String(e && (e.stack || e))}); }catch(_e){} }
 
       var input = modal.querySelector('#chatInput');
       if (input) { try{ window.ChatDebug && ChatDebug.log('startChat: focusing input'); }catch(_e){} input.focus(); }
