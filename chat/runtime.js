@@ -119,7 +119,26 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var wrap = modal.querySelector('.cosmosrp');
     if (wrap) wrap.style.display = 'none';
     modal.setAttribute('aria-hidden','true');
-    var input = modal.querySelector('#chatInput');
+    
+      // Seed greeting if first time chatting with this NPC
+      try {
+        var rel0 = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null) || {history:[],friendship:0,romance:0};
+        if (!Array.isArray(rel0.history)) rel0.history = [];
+        if (rel0.history.length === 0) {
+          var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
+          var greetText = null;
+          try {
+            var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
+            // Use a context-specific greet if available
+            greetText = g && (g.work || g.home || g.default || g.intro) || (npc0.greeting || null);
+          } catch(e){}
+          if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
+          rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
+          if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel0); } catch(e){} }
+        }
+      } catch (e) { console.warn('greeting-seed error:', e); }
+
+      var input = modal.querySelector('#chatInput');
     if (input) input.blur();
   }
   window.closeChatModal = closeChatModal;
@@ -182,6 +201,9 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
     rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
+    var __input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
+    if (__input) __input.value = '';
+    if (typeof renderChat==='function') try { renderChat(); } catch(e){}
     if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
     if (typeof renderChat==='function') renderChat(); // optimistic echo
     input.value = '';
@@ -275,6 +297,25 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           title.textContent = npc2.name;
         }
       } catch (e) {}
+
+      
+      // Seed greeting if first time chatting with this NPC
+      try {
+        var rel0 = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null) || {history:[],friendship:0,romance:0};
+        if (!Array.isArray(rel0.history)) rel0.history = [];
+        if (rel0.history.length === 0) {
+          var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
+          var greetText = null;
+          try {
+            var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
+            // Use a context-specific greet if available
+            greetText = g && (g.work || g.home || g.default || g.intro) || (npc0.greeting || null);
+          } catch(e){}
+          if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
+          rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
+          if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel0); } catch(e){} }
+        }
+      } catch (e) { console.warn('greeting-seed error:', e); }
 
       var input = modal.querySelector('#chatInput');
       if (input) input.focus();
