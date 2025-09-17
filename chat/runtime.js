@@ -200,15 +200,12 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         var log = modal.querySelector('#chatLog');
         if (!log) return;
         var relId = window.currentNpcId || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
-        
-        if (relId && typeof relId === 'object') { try { window.ChatDebug && ChatDebug.log('renderChat: normalize relId object', relId); }catch(_e){}; relId = relId.id || String(relId); }
-var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
+        var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
         if (!rel) {
           rel = { history: [], friendship: 0, romance: 0 };
           if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel); } catch(e){} }
         }
         if (!rel.history) rel.history = [];
-        try{ window.ChatDebug && ChatDebug.log('renderChat: rel.history length', {id: relId, len: rel.history.length}); }catch(_e){}
         var html = "";
         for (var i=0; i<rel.history.length; i++){
           var m = rel.history[i] || {};
@@ -298,7 +295,6 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
 
     var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
-        try{ window.ChatDebug && ChatDebug.log('renderChat: rel.history length', {id: relId, len: rel.history.length}); }catch(_e){}
     try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: push user msg', {text: textVal}); }catch(_e){}
     rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
     if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
@@ -359,7 +355,7 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
       }
 
       if (npc && npc.id) {
-        window.currentNpcId = (npc && npc.id) || npc;.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
+        window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
         window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
       } else if (!window.currentNpcId) {
         window.currentNpcId = 'lily';
@@ -422,7 +418,6 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
   if (window.__REL_STORE_PATCHED__) return;
   window.__REL_STORE_PATCHED__ = true;
 
-  // Simple IDB helper
   const DB_NAME = 'SimegameDB';
   const DB_VER = 1;
   const STORE_REL = 'relationships';
@@ -435,7 +430,7 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
     _dbPromise = new Promise((resolve, reject)=>{
       try{
         const req = indexedDB.open(DB_NAME, DB_VER);
-        req.onupgradeneeded = function(e){
+        req.onupgradeneeded = function(){
           const db = req.result;
           if (!db.objectStoreNames.contains(STORE_REL)){
             db.createObjectStore(STORE_REL);
@@ -474,7 +469,6 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
     });
   }
 
-  // Public RelStore
   const RelStore = {
     async preload(npcId){
       try{
@@ -491,16 +485,15 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
     },
     async set(npcId, rel){
       _cache[npcId] = rel;
-      try{ await idbSet(STORE_REL, npcId, rel);
-        try { if (window.RelBC) window.RelBC.postMessage({type:'rel:update', id: npcId}); } catch(_e){};
+      try{
+        await idbSet(STORE_REL, npcId, rel);
+        try { if (window.RelBC) window.RelBC.postMessage({type:'rel:update', id: npcId}); } catch(_e){}
       }catch(e){ console.warn('RelStore.set failed', e); }
     }
   };
   window.RelStore = RelStore;
   try { window.RelBC = window.RelBC || new BroadcastChannel('simegame_chat'); } catch(_e) { window.RelBC = null; }
 
-  // Back-compat: getRelationship / setRelationship use the cache synchronously.
-  // Ensure callers have called RelStore.preload(npcId) first (we'll patch startChat to do it).
   if (typeof window.getRelationship !== 'function'){
     window.getRelationship = function(npcId){
       return RelStore.getSync(npcId);
@@ -511,60 +504,23 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
       RelStore.set(npcId, rel);
     };
   }
-
-  // Back-compat: appendMsgToLog(who, text) helper
   if (typeof window.appendMsgToLog !== 'function'){
     window.appendMsgToLog = function(who, text){
       try{
-        const npcId = (window.currentNpcId && window.currentNpcId.id) || window.currentNpcId || 'unknown';
-        const rel = RelStore.getSync(npcId);
+        var npcId = (window.currentNpcId && window.currentNpcId.id) || window.currentNpcId || (window.ActiveNPC && window.ActiveNPC.id) || 'unknown';
+        if (!npcId) npcId = 'unknown';
+        var rel = RelStore.getSync(npcId);
         if (!rel.history) rel.history = [];
-        try{ window.ChatDebug && ChatDebug.log('renderChat: rel.history length', {id: relId, len: rel.history.length}); }catch(_e){}
         rel.history.push({ speaker: who, text: String(text) });
         RelStore.set(npcId, rel);
         try{ window.renderChat && window.renderChat(); }catch(_e){}
-        try{ window.ChatDebug && ChatDebug.log('appendMsgToLog', {who: who, text: text}); }catch(_e){}
       }catch(e){
         console.warn('appendMsgToLog error', e);
       }
     };
   }
 
-  // Patch startChat to ensure preload + greeting-on-first-open
-  (function patchStartChat(){
-    if (window.__START_CHAT_PATCHED__) return;
-    if (typeof window.startChat !== 'function') return; // will try again later
-    window.__START_CHAT_PATCHED__ = true;
-
-    const _orig = window.startChat;
-    window.startChat = function(npcOrId){
-      // Ensure preload occurs even if caller doesn't await
-      (async function(){
-        try{
-          const npc = (typeof npcOrId === 'object' && npcOrId) ? npcOrId : (window.getNPCById ? window.getNPCById(npcOrId) : { id: String(npcOrId) });
-          await RelStore.preload(npc.id);
-          const rel = RelStore.getSync(npc.id);
-          // Auto-greeting if empty
-          if (!rel.history || rel.history.length === 0){
-            // Choose greeting
-            const g = (npc && npc.greetings) ? (npc.greetings.home || npc.greetings.casual || null) : null;
-            if (g){
-              rel.history = rel.history || [];
-              rel.history.push({ speaker: npc.name || 'NPC', text: g });
-              await RelStore.set(npc.id, rel);
-            }
-          }
-          // Re-render after preload/greeting
-          try{ window.renderChat && window.renderChat(); }catch(_e){}
-        }catch(e){
-          console.warn('startChat preload failed', e);
-        }
-      })();
-      // Call original synchronous function immediately to open UI/modal
-      try{ return _orig.apply(this, arguments); }catch(e){ console.warn('startChat orig failed', e); }
-    };
-  })();
-
+  // Listen for cross-tab updates and refresh when viewing same NPC
   try {
     if (window.RelBC && !window.__REL_BC_BOUND__) {
       window.__REL_BC_BOUND__ = true;
@@ -573,11 +529,11 @@ var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
         if (d.type==='rel:update'){
           var cur = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId);
           if (cur && cur === d.id) {
-            // reload from IDB and re-render
             try { window.RelStore.preload(cur).then(function(){ if (typeof renderChat==='function') renderChat(); }); } catch(_e){}
           }
         }
       };
     }
   } catch(_e){}
+
 })(); // end IDB shim
