@@ -71,6 +71,26 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       return modal;
     }
     window.ensureModal = ensureModal;
+
+  // --- Relationship helpers with fallback ---
+  function __ensureRelStore(){ if (!window.__chatHistory) window.__chatHistory = {}; return window.__chatHistory; }
+  function getRel(id){
+    var rel = null;
+    try { if (typeof getRelationship === 'function') rel = getRelationship(id); } catch(e){}
+    if (!rel) {
+      var store = __ensureRelStore();
+      rel = store[id] || { history: [], friendship: 0, romance: 0 };
+      store[id] = rel;
+    }
+    if (!Array.isArray(rel.history)) rel.history = [];
+    return rel;
+  }
+  function setRel(id, rel){
+    try { if (typeof setRelationship === 'function') return setRelationship(id, rel); } catch(e){}
+    var store = __ensureRelStore();
+    store[id] = rel || { history: [], friendship: 0, romance: 0 };
+  }
+
   }
 
   // --- Fallback renderChat (safe) ---
@@ -87,10 +107,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         var log = modal.querySelector('#chatLog');
         if (!log) return;
         var relId = window.currentNpcId || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
-        var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
+        var rel = getRel(relId); if (!rel) rel = getRel(relId);
         if (!rel) {
           rel = { history: [], friendship: 0, romance: 0 };
-          if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel); } catch(e){} }
+          try { setRel(window.currentNpcId, rel); } catch(e){}
         }
         if (!rel.history) rel.history = [];
         var html = "";
@@ -120,21 +140,20 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     if (wrap) wrap.style.display = 'none';
     modal.setAttribute('aria-hidden','true');
     
-      // Seed greeting if first time chatting with this NPC
+      // Seed greeting if first time chatting with this NPC (with fallback store)
       try {
-        var rel0 = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null) || {history:[],friendship:0,romance:0};
-        if (!Array.isArray(rel0.history)) rel0.history = [];
-        if (rel0.history.length === 0) {
+        var rel0 = getRel(window.currentNpcId);
+        if (!rel0.history || rel0.history.length === 0) {
           var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
           var greetText = null;
           try {
             var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
-            // Use a context-specific greet if available
-            greetText = g && (g.work || g.home || g.default || g.intro) || (npc0.greeting || null);
+            greetText = (g && (g.work || g.home || g.default || g.intro)) || (npc0.greeting || null);
           } catch(e){}
           if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
+          rel0.history = Array.isArray(rel0.history) ? rel0.history : [];
           rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
-          if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel0); } catch(e){} }
+          setRel(window.currentNpcId, rel0);
         }
       } catch (e) { console.warn('greeting-seed error:', e); }
 
@@ -198,13 +217,13 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       }
     } catch(e){}
 
-    var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
+    var rel = getRel(npc.id) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
     rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
-    var __input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
-    if (__input) __input.value = '';
-    if (typeof renderChat==='function') try { renderChat(); } catch(e){}
-    if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
+    try { setRel(npc.id, rel); } catch(e){}
+    try { var __input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput'); if (__input) __input.value = ''; } catch(e){}
+    try { if (typeof renderChat==='function') renderChat(); } catch(e){}
+    try { setRel(npc.id, rel); } catch(e){}
     if (typeof renderChat==='function') renderChat(); // optimistic echo
     input.value = '';
 
@@ -242,7 +261,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         console.error('AI router v2 error:', err);
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
       }).then(function(){
-        if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
+        try { setRel(npc.id, rel); } catch(e){}
         if (window.GameState && window.GameState.saveState) window.GameState.saveState();
         if (typeof renderChat==='function') renderChat();
       });
@@ -299,21 +318,20 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       } catch (e) {}
 
       
-      // Seed greeting if first time chatting with this NPC
+      // Seed greeting if first time chatting with this NPC (with fallback store)
       try {
-        var rel0 = (typeof getRelationship==='function' ? getRelationship(window.currentNpcId) : null) || {history:[],friendship:0,romance:0};
-        if (!Array.isArray(rel0.history)) rel0.history = [];
-        if (rel0.history.length === 0) {
+        var rel0 = getRel(window.currentNpcId);
+        if (!rel0.history || rel0.history.length === 0) {
           var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
           var greetText = null;
           try {
             var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
-            // Use a context-specific greet if available
-            greetText = g && (g.work || g.home || g.default || g.intro) || (npc0.greeting || null);
+            greetText = (g && (g.work || g.home || g.default || g.intro)) || (npc0.greeting || null);
           } catch(e){}
           if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
+          rel0.history = Array.isArray(rel0.history) ? rel0.history : [];
           rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
-          if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel0); } catch(e){} }
+          setRel(window.currentNpcId, rel0);
         }
       } catch (e) { console.warn('greeting-seed error:', e); }
 
