@@ -10,7 +10,7 @@ if (typeof window !== 'undefined' && typeof window.appendMsgToLog !== 'function'
       var div = document.createElement('div');
       var cls = (String(who).toLowerCase() === 'you') ? 'you' : 'npc';
       div.className = 'msg ' + cls;
-      var esc = function(s){ return String(s||'').replace(/[&<>"]/g, function(ch){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]); }); };
+      var esc = function(s){ return String(s||'').replace(/[&<>"]/g, function(ch){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]); }); };
       div.innerHTML = '<div class="who">' + esc(who||'') + '</div><div class="text">' + esc(text||'') + '</div>';
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
@@ -175,8 +175,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       var div = document.createElement('div');
       var cls = (String(who).toLowerCase() === 'you') ? 'you' : 'npc';
       div.className = 'msg ' + cls;
-      var esc = function(s){ return String(s||'').replace(/[&<>"]/g, function(ch){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]); }); };
-      div.innerHTML = '<div class="who">' + esc(who||'') + '</div><div class="body">' + esc(text||'') + '</div>';
+      div.innerHTML = '<div class="who">' + (who || '') + '</div><div class="body">' + String(text || '').replace(/[&<>"]/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }
+  // ✅ Ensure appendMsgToLog is available globally for callers like sendCurrentMessage
+  try { if (!window.appendMsgToLog) window.appendMsgToLog = appendMsgToLog; } catch(_e) {}
+[s])) + '</div>';
       log.appendChild(div);
       log.scrollTop = log.scrollHeight;
       try{ window.ChatDebug && ChatDebug.log('appendMsgToLog', {who: who, text: text}); }catch(_e){}
@@ -185,8 +187,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     }
   }
 
-  // ✅ Ensure appendMsgToLog is available globally for callers like sendCurrentMessage
-  try { if (!window.appendMsgToLog) window.appendMsgToLog = appendMsgToLog; } catch(_e) {}
+  }
 
   // --- Fallback renderChat (safe) ---
   if (typeof window.renderChat !== 'function') {
@@ -234,7 +235,26 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var wrap = modal.querySelector('.cosmosrp');
     if (wrap) wrap.style.display = 'none';
     modal.setAttribute('aria-hidden','true');
-    var input = modal.querySelector('#chatInput');
+    
+      // Seed greeting if first time chatting
+      try {
+        var rel0 = (typeof getRel==='function' ? getRel(window.currentNpcId) : null) || { history: [], friendship: 0, romance: 0 };
+        if (!Array.isArray(rel0.history)) rel0.history = [];
+        if (rel0.history.length === 0) {
+          var npc0 = (window.ActiveNPC && window.ActiveNPC.id === window.currentNpcId) ? window.ActiveNPC : (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null) || { id: window.currentNpcId, name: String(window.currentNpcId||'NPC') };
+          var g = (npc0 && npc0.greetings) ? npc0.greetings : {};
+          var greetText = (g && (g.work || g.home || g.default || g.intro || g.casual)) || (npc0.greeting || null);
+          if (!greetText) greetText = "Hi, I'm " + (npc0.name || 'NPC') + ". How can I help?";
+          appendMsgToLog(npc0.name || (npc0.id || 'NPC'), String(greetText));
+          rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
+          try { if (typeof setRel==='function') setRel(window.currentNpcId, rel0); } catch(e){}
+          try{ window.ChatDebug && ChatDebug.log('greeting seeded', {npcId:npc0.id, greet: greetText}); }catch(_e){}
+        } else {
+          try{ window.ChatDebug && ChatDebug.log('greeting skipped (history exists)', {len: rel0.history.length}); }catch(_e){}
+        }
+      } catch(e){ try{ window.ChatDebug && ChatDebug.log('greeting error', {err: String(e && (e.stack || e))}); }catch(_e){} }
+
+      var input = modal.querySelector('#chatInput');
     if (input) input.blur();
   }
   window.closeChatModal = closeChatModal;
@@ -260,7 +280,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   var __routerPromise = null;
   function getRespond(){
     if (window.respondToV2) return Promise.resolve(window.respondToV2);
-    if (!__routerPromise) { try{ window.ChatDebug && ChatDebug.log('getRespond: dynamic import router.v2'); }catch(_e){} 
+    if (!__routerPromise) { try{ window.ChatDebug && ChatDebug.log('getRespond: dynamic import router.v2'); }catch(_e){}
       __routerPromise = import('../src/ai/router.v2.js').then(function(m){
         var fn = m.respondToV2 || m.default;
         if (!fn) throw new Error('router.v2.js missing respondToV2 export');
@@ -272,7 +292,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   }
 
   // --- Core sender (no async/await) ---
-  function sendCurrentMessage(){ try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage called'); }catch(_e){} 
+  function sendCurrentMessage(){ try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage called'); }catch(_e){}
     var modal = document.getElementById('chatModal') || (typeof ensureModal === 'function' ? ensureModal() : null);
     var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
     if (!input) return;
@@ -285,8 +305,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     if (!npc && typeof window.currentNpcId === 'string') { npc = { id: window.currentNpcId, name: window.currentNpcId }; }
 
     // Ensure global targeting is aligned
-    if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){} 
-    window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id: npc && npc.id, name: npc && npc.name}); }catch(_e){} 
+    if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
+    window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id: npc && npc.id, name: npc && npc.name}); }catch(_e){}
 
     try {
       if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
@@ -322,19 +342,20 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
       var meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
 
-      try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 start', {text: textVal}); }catch(_e){} 
+      try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 start', {text: textVal}); }catch(_e){}
       return respondToV2(textVal, {
         world: w,
         now: new Date().toLocaleString(),
         npc: npc,
         meters: meters,
         player: player
-      }).then(function(reply){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 done', {reply: (reply && reply.text) ? reply.text : reply}); }catch(_e){} 
+      }).then(function(reply){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 done', {reply: (reply && reply.text) ? reply.text : reply}); }catch(_e){}
         var out = (reply && typeof reply === 'object' && reply.text) ? reply.text : reply;
         if (!out) out = '…';
         appendMsgToLog(npc.name || (npc.id || 'NPC'), out);
+        appendMsgToLog(npc.name || (npc.id || 'NPC'), '[AI error. Check settings/API key.]');
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: out, ts: Date.now() });
-      }).catch(function(err){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 error', {error: String(err && (err.stack || err))}); }catch(_e){} 
+      }).catch(function(err){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 error', {error: String(err && (err.stack || err))}); }catch(_e){}
         console.error('AI router v2 error:', err);
         appendMsgToLog(npc.name || (npc.id || 'NPC'), '[AI error. Check settings/API key.]');
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
@@ -348,7 +369,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.sendCurrentMessage = sendCurrentMessage;
 
   // --- Start chat (accepts NPC object or id) ---
-  function startChat(npcOrId) { try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){} 
+  function startChat(npcOrId) { try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
     try {
       var npc = null;
       if (npcOrId && typeof npcOrId === 'object') {
@@ -358,8 +379,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       }
 
       if (npc && npc.id) {
-        window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){} 
-        window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id: npc && npc.id, name: npc && npc.name}); }catch(_e){} 
+        window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
+        window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id: npc && npc.id, name: npc && npc.name}); }catch(_e){}
       } else if (!window.currentNpcId) {
         window.currentNpcId = 'lily';
       }
@@ -395,6 +416,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         }
       } catch (e) {}
 
+      
       // Seed greeting if first time chatting
       try {
         var rel0 = (typeof getRel==='function' ? getRel(window.currentNpcId) : null) || { history: [], friendship: 0, romance: 0 };
@@ -407,9 +429,9 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           appendMsgToLog(npc0.name || (npc0.id || 'NPC'), String(greetText));
           rel0.history.push({ speaker: npc0.name || (npc0.id || 'NPC'), text: String(greetText), ts: Date.now() });
           try { if (typeof setRel==='function') setRel(window.currentNpcId, rel0); } catch(e){}
-          try{ window.ChatDebug && ChatDebug.log('greeting seeded', {npcId:npc0.id, greet: greetText}); }catch(_e){} 
+          try{ window.ChatDebug && ChatDebug.log('greeting seeded', {npcId:npc0.id, greet: greetText}); }catch(_e){}
         } else {
-          try{ window.ChatDebug && ChatDebug.log('greeting skipped (history exists)', {len: rel0.history.length}); }catch(_e){} 
+          try{ window.ChatDebug && ChatDebug.log('greeting skipped (history exists)', {len: rel0.history.length}); }catch(_e){}
         }
       } catch(e){ try{ window.ChatDebug && ChatDebug.log('greeting error', {err: String(e && (e.stack || e))}); }catch(_e){} }
 
