@@ -178,12 +178,15 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         var log = modal.querySelector('#chatLog');
         if (!log) return;
         var relId = window.currentNpcId || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
-        var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
+        
+        if (relId && typeof relId === 'object') { try { window.ChatDebug && ChatDebug.log('renderChat: normalize relId object', relId); }catch(_e){}; relId = relId.id || String(relId); }
+var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
         if (!rel) {
           rel = { history: [], friendship: 0, romance: 0 };
           if (typeof setRelationship==='function') { try { setRelationship(window.currentNpcId, rel); } catch(e){} }
         }
         if (!rel.history) rel.history = [];
+        try{ window.ChatDebug && ChatDebug.log('renderChat: rel.history length', {id: relId, len: rel.history.length}); }catch(_e){}
         var html = "";
         for (var i=0; i<rel.history.length; i++){
           var m = rel.history[i] || {};
@@ -273,6 +276,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
     var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
+        try{ window.ChatDebug && ChatDebug.log('renderChat: rel.history length', {id: relId, len: rel.history.length}); }catch(_e){}
     try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: push user msg', {text: textVal}); }catch(_e){}
     rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
     if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
@@ -490,6 +494,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         const npcId = (window.currentNpcId && window.currentNpcId.id) || window.currentNpcId || 'unknown';
         const rel = RelStore.getSync(npcId);
         if (!rel.history) rel.history = [];
+        try{ window.ChatDebug && ChatDebug.log('renderChat: rel.history length', {id: relId, len: rel.history.length}); }catch(_e){}
         rel.history.push({ speaker: who, text: String(text) });
         RelStore.set(npcId, rel);
         try{ window.renderChat && window.renderChat(); }catch(_e){}
