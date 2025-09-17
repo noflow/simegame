@@ -58,6 +58,50 @@
 })(); 
 // === End Chat Debug ===
 
+
+// === Relationship store shim (back-compat) ===
+(function(){
+  try{
+    if (typeof window === 'undefined') return;
+    // simple persisted store using localStorage
+    var LS_KEY = 'chat_rel_v1';
+    function loadStore(){
+      try{ return JSON.parse(localStorage.getItem(LS_KEY)||'{}') || {}; }catch(e){ return {}; }
+    }
+    function saveStore(obj){
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }catch(e){}
+    }
+    var store = loadStore();
+
+    if (typeof window.getRelationship !== 'function'){
+      window.getRelationship = function(id){
+        var key = String(id||'default');
+        if (!store[key]) store[key] = { history: [], friendship: 0, romance: 0 };
+        return store[key];
+      };
+    }
+    if (typeof window.setRelationship !== 'function'){
+      window.setRelationship = function(id, rel){
+        var key = String(id||'default');
+        store[key] = Object.assign({history:[],friendship:0,romance:0}, rel||{});
+        saveStore(store);
+        return store[key];
+      };
+    }
+    // Legacy helper for older callers
+    if (typeof window.appendMsgToLog !== 'function'){
+      window.appendMsgToLog = function(who, text){
+        try{
+          var id = window.currentNpcId || 'default';
+          var rel = window.getRelationship(id);
+          rel.history.push({ speaker: String(who||'You'), text: String(text||''), ts: Date.now() });
+          window.setRelationship(id, rel);
+          if (typeof window.renderChat === 'function') window.renderChat();
+        }catch(e){ console.warn('appendMsgToLog shim error', e); }
+      };
+    }
+  }catch(e){ console.warn('rel shim init error', e); }
+})();
 // === Chat relationship shim (always-on) ===
 (function(){
   try {
@@ -361,6 +405,19 @@ if (window.__CHAT_RUNTIME_LOADED__) {
           }
         }
       } catch (e) {}
+      // Auto-greet if first open and no history yet
+      try{
+        var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
+        var rel2 = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : {history:[], friendship:0, romance:0};
+        if (rel2 && Array.isArray(rel2.history) && rel2.history.length === 0 && npc2){
+          var greet = (npc2.greetings && (npc2.greetings.home || npc2.greetings.casual)) || '';
+          if (greet){
+            rel2.history.push({ speaker: npc2.name || (npc2.id || 'NPC'), text: greet, ts: Date.now() });
+            if (typeof setRelationship === 'function') setRelationship(window.currentNpcId, rel2);
+          }
+        }
+      }catch(_egreet){}
+
 
       try {
         var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
@@ -389,32 +446,3 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.GameUI.sendCurrentMessage = sendCurrentMessage; // fixed
 
 } // <-- Added this closing brace to close the "else" block
-
-
-// === Back-compat: appendMsgToLog shim ===
-// Some older UIs call appendMsgToLog(who, text). Provide a safe shim that
-// writes into the relationship history and re-renders the chat.
-(function(){
-  try{
-    if (typeof window.appendMsgToLog !== 'function') {
-      window.appendMsgToLog = function(who, text){
-        try{
-          var modal = document.getElementById('chatModal') || (typeof ensureModal==='function' ? ensureModal() : null);
-          var npc = (window.ActiveNPC && window.ActiveNPC.id) ? window.ActiveNPC
-                    : (typeof getNpcById==='function' && window.currentNpcId ? getNpcById(window.currentNpcId) : null);
-          if (!npc && typeof window.currentNpcId === 'string') npc = { id: window.currentNpcId, name: window.currentNpcId };
-          var relId = (npc && npc.id) || window.currentNpcId || 'lily';
-          var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
-          if (!rel) { rel = { history: [], friendship: 0, romance: 0 }; if (typeof setRelationship==='function'){ try{ setRelationship(relId, rel); }catch(_e){} } }
-          if (!Array.isArray(rel.history)) rel.history = [];
-          var speaker = String(who || '').trim() || 'You';
-          var body = String(text || '').trim();
-          rel.history.push({ speaker: speaker, text: body, ts: Date.now() });
-          if (typeof setRelationship==='function'){ try{ setRelationship(relId, rel); }catch(_e){} }
-          if (typeof renderChat === 'function') renderChat();
-        }catch(e){ console.warn('appendMsgToLog shim error:', e); }
-      };
-      try{ window.ChatDebug && ChatDebug.log('appendMsgToLog shim installed'); }catch(_e){}
-    }
-  }catch(e){ /* no-op */ }
-})();
