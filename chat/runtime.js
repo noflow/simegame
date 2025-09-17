@@ -1,3 +1,63 @@
+// === Chat Debug Overlay & Logger (auto) ===
+(function(){
+  try {
+    if (typeof window === 'undefined') return;
+    // Enable when ?chatdebug=1 or localStorage.CHAT_DEBUG === '1'
+    var q = (location && location.search || "");
+    var enabled = /\bchatdebug=1\b/.test(q) || (function(){ try { return localStorage.getItem('CHAT_DEBUG') === '1'; } catch(e){ return false; }})();
+    window.__CHAT_RUNTIME_BUILD = (window.__CHAT_RUNTIME_BUILD || "v34-debug") + "-" + (new Date()).toISOString();
+    function ensureDbg(){
+      var el = document.getElementById('chatDebug');
+      if (el) return el;
+      el = document.createElement('div');
+      el.id = 'chatDebug';
+      el.style.position = 'fixed';
+      el.style.right = '10px';
+      el.style.bottom = '10px';
+      el.style.width = 'min(420px, 80vw)';
+      el.style.maxHeight = '40vh';
+      el.style.overflow = 'auto';
+      el.style.zIndex = '99999';
+      el.style.font = '12px/1.4 monospace';
+      el.style.background = 'rgba(0,0,0,0.8)';
+      el.style.color = '#0f0';
+      el.style.border = '1px solid #0f0';
+      el.style.borderRadius = '8px';
+      el.style.padding = '8px';
+      el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.4)';
+      el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><strong>Chat Debug</strong><button id="chatDebugClose" style="background:#111;color:#0f0;border:1px solid #0f0;border-radius:4px;padding:2px 6px;cursor:pointer">×</button></div><pre id="chatDebugLog" style="white-space:pre-wrap;margin:0"></pre>';
+      document.body.appendChild(el);
+      var btn = el.querySelector('#chatDebugClose');
+      if (btn) btn.addEventListener('click', function(){ el.style.display='none'; });
+      return el;
+    }
+    function logLine(msg, data){
+      var s = "[" + (new Date()).toLocaleTimeString() + "] " + String(msg);
+      if (data !== undefined) {
+        try { s += " " + JSON.stringify(data); } catch(e){}
+      }
+      console.debug("%c[CHAT]", "color:#0a0", s, data||"");
+      if (!enabled) return;
+      var wrap = ensureDbg();
+      var pre = wrap.querySelector('#chatDebugLog');
+      if (pre) {
+        pre.textContent = (pre.textContent + (pre.textContent ? "\n" : "") + s).slice(-8000);
+      }
+    }
+    window.ChatDebug = {
+      enable: function(){ try { localStorage.setItem('CHAT_DEBUG','1'); } catch(e){} enabled = true; logLine("Chat debug enabled"); },
+      disable: function(){ try { localStorage.removeItem('CHAT_DEBUG'); } catch(e){} enabled = false; var el=document.getElementById('chatDebug'); if(el) el.style.display='none'; console.debug("[CHAT] debug disabled"); },
+      log: logLine,
+      build: function(){ return window.__CHAT_RUNTIME_BUILD; }
+    };
+    // banner
+    logLine("Chat runtime loaded", { build: window.__CHAT_RUNTIME_BUILD });
+  } catch(e){
+    console.warn("ChatDebug init error", e);
+  }
+})(); 
+// === End Chat Debug ===
+
 // === Chat relationship shim (always-on) ===
 (function(){
   try {
@@ -66,17 +126,19 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         '</div>'
       ].join('');
       document.body.appendChild(modal);
+      try { window.ChatDebug && ChatDebug.log('ensureModal: modal created'); } catch(e){}
+
       // Wire form + send + enter (keydown/keypress/keyup)
       var form = modal.querySelector('#chatForm');
       if (form) {
-        form.addEventListener('submit', function(e){
+        form.addEventListener('submit', function(e){ try{ window.ChatDebug && ChatDebug.log('form submit'); }catch(_e){};
           e.preventDefault();
           if (typeof window.sendCurrentMessage === 'function') window.sendCurrentMessage();
         });
       }
       var sendBtn = modal.querySelector('#sendBtn');
       if (sendBtn) {
-        sendBtn.addEventListener('click', function(e){
+        sendBtn.addEventListener('click', function(e){ try{ window.ChatDebug && ChatDebug.log('sendBtn click'); }catch(_e){};
           e.preventDefault();
           if (typeof window.sendCurrentMessage === 'function') window.sendCurrentMessage();
         });
@@ -109,7 +171,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       var map = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
       return str.replace(/[&<>"']/g, function(ch){ return map[ch]; });
     }
-    function renderChat(){
+    function renderChat(){ try{ window.ChatDebug && ChatDebug.log('renderChat start', {npcId: window.currentNpcId}); }catch(_e){}
       try{
         var modal = document.getElementById('chatModal');
         if (!modal) return;
@@ -151,6 +213,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     var input = modal.querySelector('#chatInput');
     if (input) input.blur();
   }
+  try{ window.ChatDebug && ChatDebug.log('renderChat end'); }catch(_e){}
   window.closeChatModal = closeChatModal;
 
   if (!window.__chatCloseWired) {
@@ -174,7 +237,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   var __routerPromise = null;
   function getRespond(){
     if (window.respondToV2) return Promise.resolve(window.respondToV2);
-    if (!__routerPromise) {
+    if (!__routerPromise) { try{ window.ChatDebug && ChatDebug.log('getRespond: dynamic import router.v2'); }catch(_e){}
       __routerPromise = import('../src/ai/router.v2.js').then(function(m){
         var fn = m.respondToV2 || m.default;
         if (!fn) throw new Error('router.v2.js missing respondToV2 export');
@@ -186,12 +249,12 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   }
 
   // --- Core sender (no async/await) ---
-  function sendCurrentMessage(){
+  function sendCurrentMessage(){ try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage called'); }catch(_e){}
     var modal = document.getElementById('chatModal') || (typeof ensureModal === 'function' ? ensureModal() : null);
     var input = (modal && modal.querySelector) ? modal.querySelector('#chatInput') : document.querySelector('#chatInput');
     if (!input) return;
     var textVal = String(input.value || '').trim();
-    if (!textVal) return;
+    if (!textVal) { try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: empty input'); }catch(_e){}; return; }
 
     var npc = null;
     if (window.ActiveNPC && window.ActiveNPC.id) npc = window.ActiveNPC;
@@ -199,8 +262,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     if (!npc && typeof window.currentNpcId === 'string') { npc = { id: window.currentNpcId, name: window.currentNpcId }; }
 
     // Ensure global targeting is aligned
-    if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id;
-    window.ActiveNPC = npc;
+    if (!window.currentNpcId || window.currentNpcId !== npc.id) window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
+    window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
 
     try {
       if ((npc.id==='lily' || /lily/i.test(npc.name||'')) && (!npc.relations || !npc.relations.MC)) {
@@ -210,6 +273,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
     var rel = (typeof getRelationship==='function' ? getRelationship(npc.id) : null) || {history:[],friendship:0,romance:0};
     if (!rel.history) rel.history = [];
+    try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: push user msg', {text: textVal}); }catch(_e){}
     rel.history.push({ speaker:'You', text: textVal, ts: Date.now() });
     if (typeof setRelationship==='function') { try { setRelationship(npc.id, rel); } catch(e){} }
     if (typeof renderChat==='function') renderChat(); // optimistic echo
@@ -235,17 +299,18 @@ if (window.__CHAT_RUNTIME_LOADED__) {
 
       var meters = Object.assign({ friendship: rel.friendship || 0, romance: rel.romance || 0 }, rel.meters || {});
 
+      try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 start', {text: textVal}); }catch(_e){}
       return respondToV2(textVal, {
         world: w,
         now: new Date().toLocaleString(),
         npc: npc,
         meters: meters,
         player: player
-      }).then(function(reply){
+      }).then(function(reply){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 done', {reply: (reply && reply.text) ? reply.text : reply}); }catch(_e){}
         var out = (reply && typeof reply === 'object' && reply.text) ? reply.text : reply;
         if (!out) out = '…';
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: out, ts: Date.now() });
-      }).catch(function(err){
+      }).catch(function(err){ try{ window.ChatDebug && ChatDebug.log('AI: respondToV2 error', {error: String(err && (err.stack || err))}); }catch(_e){}
         console.error('AI router v2 error:', err);
         rel.history.push({ speaker: npc.name || (npc.id || 'NPC'), text: '[AI error. Check settings/API key.]', ts: Date.now() });
       }).then(function(){
@@ -258,7 +323,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.sendCurrentMessage = sendCurrentMessage;
 
   // --- Start chat (accepts NPC object or id) ---
-  function startChat(npcOrId) {
+  function startChat(npcOrId) { try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
     try {
       var npc = null;
       if (npcOrId && typeof npcOrId === 'object') {
@@ -268,8 +333,8 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       }
 
       if (npc && npc.id) {
-        window.currentNpcId = npc.id;
-        window.ActiveNPC = npc;
+        window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
+        window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
       } else if (!window.currentNpcId) {
         window.currentNpcId = 'lily';
       }
@@ -306,7 +371,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
       } catch (e) {}
 
       var input = modal.querySelector('#chatInput');
-      if (input) input.focus();
+      if (input) { try{ window.ChatDebug && ChatDebug.log('startChat: focusing input'); }catch(_e){} input.focus(); }
 
       if (typeof renderChat === 'function') renderChat();
 
