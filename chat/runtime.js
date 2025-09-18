@@ -1,5 +1,8 @@
 
 // runtime.js (clean rewrite) — v35
+import * as __StateMod from '../src/state.js';
+try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
+
 // Minimal, self-contained chat runtime with IndexedDB history, modal UI, and router.v2 integration.
 
 // --- Globals & helpers ---
@@ -182,13 +185,20 @@ function __detectPlayer(){
 }
 function __detectLocation(){
   try{
-    // Prefer game state
+    try{
+      const mod = (window.GameState || __StateMod);
+      if (mod && mod.state && mod.state.location) return String(mod.state.location);
+    }catch(_e){}
     const st = (window.GameState && window.GameState.state) || {};
     let loc = st.location || (window.GameWorld && window.GameWorld.location) || (window.world && window.world.location);
-    // DOM fallbacks
     if (!loc){
-      const el = document.querySelector('[data-current-location]') || document.querySelector('[data-location].active') || document.querySelector('#locationName');
-      if (el) loc = (el.getAttribute('data-current-location') || el.getAttribute('data-location') || el.textContent || '').trim();
+      const el = document.querySelector('[data-current-location]') || document.querySelector('[data-location].active') || document.getElementById('locationDesc');
+      if (el){
+        const attr = el.getAttribute('data-current-location') || el.getAttribute('data-location') || '';
+        const txt = (el.textContent || '').trim();
+        loc = attr || (txt.split('
+')[0].trim());
+      }
     }
     if (!loc) loc = 'City';
     return String(loc);
@@ -291,3 +301,5 @@ if (typeof window.appendMsgToLog !== 'function'){
     }catch(e){ console.warn('appendMsgToLog error', e); }
   };
 }
+
+try{ window.GameUI = window.GameUI || {}; window.GameUI.closeChatModal = closeChatModal; }catch(_e){}
