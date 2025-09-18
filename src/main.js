@@ -12,6 +12,30 @@ import * as Known from './known/index.js';
 import * as Debug from './debug.js';
 import * as CharBuild from './builder/character_builder.js';
 
+// --- Hard reset helper: clear localStorage, IndexedDB chats, and notify other tabs ---
+async function __clearAllGameData() {
+  try {
+    // Delete chats DB
+    await new Promise((resolve) => {
+      try {
+        const req = indexedDB.deleteDatabase('SimegameDB');
+        let done = false;
+        req.onsuccess = () => { done = true; resolve(); };
+        req.onerror = () => { resolve(); };
+        req.onblocked = () => { resolve(); };
+        // Safety timeout
+        setTimeout(() => { if (!done) resolve(); }, 500);
+      } catch (e) { resolve(); }
+    });
+  } catch (_e) {}
+  try { localStorage.removeItem('game_state_v1'); } catch (_e) {}
+  try { localStorage.removeItem(WORLD_KEY); } catch (_e) {}
+  try { localStorage.removeItem(CHARS_KEY); } catch (_e) {}
+  try { localStorage.removeItem('char_builder_saved'); } catch (_e) {}
+  try { if (window.RelBC) window.RelBC.postMessage({type:'rel:reset'}); } catch (_e) {}
+}
+
+
 // ensure global container exists even before JSON is loaded
 window.GameData = window.GameData || { WORLD: null, CHARACTERS: null };
 
@@ -705,11 +729,9 @@ alert('Loaded custom map.json');
     alert('Game saved.');
   });
 
-  document.getElementById('resetGame')?.addEventListener('click', () => {
-    if (!confirm('Reset all progress and clear custom data?')) return;
-    localStorage.removeItem('game_state_v1');
-    localStorage.removeItem(WORLD_KEY);
-    localStorage.removeItem(CHARS_KEY);
+  document.getElementById('resetGame')?.addEventListener('click', async () => {
+    if (!confirm('Reset all progress, chats, and custom data?')) return;
+    await __clearAllGameData();
     location.reload();
   });
 
@@ -935,3 +957,5 @@ function updateLoadIndicators(){
   }catch(e){ console.warn('updateLoadIndicators failed:', e); }
 }
 
+
+window.GameReset = __clearAllGameData;
