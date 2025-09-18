@@ -202,7 +202,16 @@ function __detectLocation(){
   }catch(e){ return 'City'; }
 }
 
+
+function __detectTimeOfDay(){
+  try{
+    const st = (window.GameState && window.GameState.state) || (typeof __StateMod !== 'undefined' && __StateMod.state) || {};
+    const idx = st.timeIndex || 0;
+    return ['morning','afternoon','evening','night'][idx] || 'day';
+  }catch(e){ return 'day'; }
+}
 // --- Router loader ---
+
 let __routerPromise = null;
 function getRespond(){
   if (window.respondToV2) return Promise.resolve(window.respondToV2);
