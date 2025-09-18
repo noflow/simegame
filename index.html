@@ -318,9 +318,7 @@ if (!window.GameUI.sendCurrentMessage) { window.GameUI.sendCurrentMessage = func
 document.addEventListener('DOMContentLoaded', function(){
   var dups = document.querySelectorAll('#chatModal');
   if (dups && dups.length > 1) {
-    for (var i = 1; i < dups.length; i++) {
-      try { dups[i].remove(); } catch(_e){}
-    }
+    for (var i = 1; i < dups.length; i++) { try { dups[i].remove(); } catch(_e){} }
   }
 });
 </script>
