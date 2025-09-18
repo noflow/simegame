@@ -173,8 +173,15 @@ function sendCurrentMessage(){
     RelStore.set(id, rel).then(()=> renderChat());
 
     // AI reply
-    getRespond().then(fn=> fn({text: textVal, npcId: id, npc: npc})).then(resp=>{
-      const reply = (resp && (resp.reply || resp.text)) || '';
+    getRespond().then(fn=> {
+      const ctx = {
+        npc: npc,
+        world: (window.GameWorld || window.world || window.gameWorld || {}),
+        player: (window.Player || { id: 'MC', name: 'You' })
+      };
+      return fn(textVal, ctx);
+    }).then(reply=>{
+      reply = String(reply || '');
       const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
       RelStore.set(id, r2).then(()=> renderChat());
     }).catch(err=>{
