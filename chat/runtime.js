@@ -390,7 +390,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.sendCurrentMessage = sendCurrentMessage;
 
   // --- Start chat (accepts NPC object or id) ---
-  \1 try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){} try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
+    try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){} try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
     try {
       var npc = null;
       if (npcOrId && typeof npcOrId === 'object') {
@@ -455,7 +455,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.GameUI.renderChat = window.renderChat || function() {};
   window.GameUI.sendCurrentMessage = sendCurrentMessage; // fixed
 
-} // <-- Added this closing brace to close the "else" block
+// <-- Added this closing brace to close the "else" block
 
 
 // === IndexedDB Relationship Store Shim (IDB-backed) ===
