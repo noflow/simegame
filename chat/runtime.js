@@ -1,3 +1,4 @@
+try { if (typeof window.currentNpcId === 'undefined') window.currentNpcId = null; } catch(_e){}
 // === Chat Debug Overlay & Logger (auto) ===
 (function(){
   try {
@@ -390,7 +391,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.sendCurrentMessage = sendCurrentMessage;
 
   // --- Start chat (accepts NPC object or id) ---
-function startChat(npcOrId) { try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
+  \1 try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){} try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
     try {
       var npc = null;
       if (npcOrId && typeof npcOrId === 'object') {
@@ -417,7 +418,7 @@ function startChat(npcOrId) { try{ window.ChatDebug && ChatDebug.log('startChat 
         wrap.style.display = 'flex';
       }
 
-      modal.removeAttribute('aria-hidden');
+      modal.removeAttribute('aria-hidden'); try{ modal.removeAttribute('inert'); }catch(_e){}
 
       try {
         var relInit = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : null;
@@ -449,7 +450,6 @@ function startChat(npcOrId) { try{ window.ChatDebug && ChatDebug.log('startChat 
 
   // Attach to global scope
   window.startChat = startChat;
-
   window.GameUI = window.GameUI || {};
   window.GameUI.startChat = startChat;
   window.GameUI.closeChat = closeChatModal;
