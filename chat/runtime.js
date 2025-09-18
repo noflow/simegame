@@ -1,4 +1,15 @@
-try { if (typeof window.currentNpcId === 'undefined') window.currentNpcId = null; } catch(_e){}
+
+;try { if (typeof window.currentNpcId === 'undefined') window.currentNpcId = null; } catch(_e){}
+try {
+  if (typeof escapeHtml !== 'function') {
+    var escapeHtml = function(s){
+      s = String(s == null ? '' : s);
+      return s.replace(/[&<>"']/g, function(c){
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+      });
+    };
+  }
+} catch(_e){}
 // === Chat Debug Overlay & Logger (auto) ===
 (function(){
   try {
@@ -249,6 +260,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         }
         if (!rel.history) rel.history = [];
         var html = "";
+        try{ window.ChatDebug && ChatDebug.log('renderChat: building', {id: relId, count: rel.history.length}); }catch(_e){}
         for (var i=0; i<rel.history.length; i++){
           var m = rel.history[i] || {};
           var who = m.speaker || "";
@@ -258,6 +270,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         }
         var mf = modal.querySelector('#meterFriend'); if (mf) mf.textContent = rel.friendship || 0;
         var mr = modal.querySelector('#meterRomance'); if (mr) mr.textContent = rel.romance || 0;
+        try{ window.ChatDebug && ChatDebug.log('renderChat: injecting html', {len: html.length}); }catch(_e){}
         log.innerHTML = html;
         log.scrollTop = log.scrollHeight;
       }catch(e){ console.warn('renderChat fallback failed:', e); }
@@ -558,6 +571,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         var rel = RelStore.getSync(npcId);
         if (!rel.history) rel.history = [];
         rel.history.push({ speaker: who, text: String(text) });
+        try{ window.ChatDebug && ChatDebug.log('appendMsgToLog: pushed', {npcId: npcId, who: who, text: String(text)}); }catch(_e){}
         RelStore.set(npcId, rel);
         try{ window.renderChat && window.renderChat(); }catch(_e){}
       }catch(e){
