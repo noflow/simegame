@@ -1,6 +1,7 @@
 
-// runtime.js (clean rewrite) — v35
 import * as __StateMod from '../src/state.js';
+try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
+// runtime.js (clean rewrite) — v35
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
 
 // Minimal, self-contained chat runtime with IndexedDB history, modal UI, and router.v2 integration.
@@ -154,27 +155,24 @@ function renderChat(){
 window.renderChat = renderChat;
 
 
+
+
+
+
 function __detectPlayer(){
   try{
-    // Prefer structured state
     let p = (window.GameState && window.GameState.state && window.GameState.state.player) || window.Player || {};
     if (!p || typeof p !== 'object') p = {};
-    // Try cached save blob
-    if (!p.gender || !p.name){
-      try{
-        const raw = localStorage.getItem('game_state_v1');
-        if (raw){
-          const s = JSON.parse(raw);
-          if (s && s.player){
-            p = Object.assign({}, p, s.player);
-          }
-        }
-      }catch(_e){}
-    }
-    // Normalize gender text
+    try{
+      const raw = localStorage.getItem('game_state_v1');
+      if ((!p.gender || !p.name) && raw){
+        const s = JSON.parse(raw);
+        if (s && s.player){ p = Object.assign({}, p, s.player); }
+      }
+    }catch(_e){}
     if (p.gender){
       const g = String(p.gender).toLowerCase();
-      if (g === 'transgender' || g === 'transfemale' || g === 'trans female' || g === 'transgender female') p.gender = 'transgender female';
+      if (g==='transgender' || g==='trans female' || g==='transgender female' || g==='transfemale') p.gender = 'transgender female';
       else if (/^m(ale)?$/.test(g)) p.gender = 'male';
       else if (/^f(emale)?$/.test(g)) p.gender = 'female';
     }
@@ -196,8 +194,7 @@ function __detectLocation(){
       if (el){
         const attr = el.getAttribute('data-current-location') || el.getAttribute('data-location') || '';
         const txt = (el.textContent || '').trim();
-        loc = attr || (txt.split('
-')[0].trim());
+        loc = attr || (txt.split('\n')[0].trim());
       }
     }
     if (!loc) loc = 'City';
