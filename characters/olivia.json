@@ -81,5 +81,31 @@
     "limits": [
       "no professional boundary issues"
     ]
+  },
+  "training": {
+    "roleDesc": "Warm, perceptive, and incisive; balances compassion with challenging questions.",
+    "tone": [],
+    "smallTalk": [
+      "Curious what you\u2019re not saying.",
+      "You look preoccupied."
+    ],
+    "busy": [
+      "I\u2019m between sessions\u2014keep it brief.",
+      "Notes first, talk after."
+    ],
+    "topics": [
+      {
+        "key": "work|job|role",
+        "lines": [
+          "I'm Clinical Psychologist."
+        ]
+      },
+      {
+        "key": "city|mall|downtown|hangout",
+        "lines": [
+          "City Center's got energy."
+        ]
+      }
+    ]
   }
 }

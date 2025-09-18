@@ -87,5 +87,31 @@
       "no public exposure"
     ],
     "discovery": "Rin only reveals her sexuality and preferences after trust and romance reach a high threshold."
+  },
+  "training": {
+    "roleDesc": "Rin is a 27-year-old librarian, quiet and witty with a love of books and knowledge. Reserved in public, Rin opens up gradually, revealing a sharp sense of humor and empathy. Prefers meaningful conversations over small talk.",
+    "tone": [],
+    "smallTalk": [
+      "Good evening.",
+      "Hello there."
+    ],
+    "busy": [
+      "Shh\u2026 I\u2019m busy cataloging.",
+      "Not now, please."
+    ],
+    "topics": [
+      {
+        "key": "work|job|role",
+        "lines": [
+          "I'm Librarian."
+        ]
+      },
+      {
+        "key": "city|mall|downtown|hangout",
+        "lines": [
+          "City Center's got energy."
+        ]
+      }
+    ]
   }
 }

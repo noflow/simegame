@@ -98,5 +98,31 @@
       "no lasting marks",
       "no reputation damage"
     ]
+  },
+  "training": {
+    "roleDesc": "Polished, ambitious, and razor-sharp in business; privately guarded and lonelier than she lets on.",
+    "tone": [],
+    "smallTalk": [
+      "You have good timing.",
+      "You again\u2014interesting."
+    ],
+    "busy": [
+      "I\u2019m on a deadline\u2014walk with me.",
+      "Make it quick, I\u2019m late for a call."
+    ],
+    "topics": [
+      {
+        "key": "work|job|role",
+        "lines": [
+          "I'm Entrepreneur / Lifestyle Influencer."
+        ]
+      },
+      {
+        "key": "city|mall|downtown|hangout",
+        "lines": [
+          "City Center's got energy."
+        ]
+      }
+    ]
   }
 }

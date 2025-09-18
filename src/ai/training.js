@@ -68,6 +68,23 @@ export const packs = {
 
 export function getPack(npc){
   if (!npc) return null;
+  // If the character JSON contains a 'training' block, normalize and use it
+  const t = npc.training;
+  const out = t ? {
+    id: (npc.id || 'npc'),
+    name: (npc.name || 'NPC'),
+    roleDesc: t.roleDesc || npc.role || '',
+    tone: Array.isArray(t.tone) ? t.tone.slice(0,3) : [],
+    smallTalk: Array.isArray(t.smallTalk) ? t.smallTalk.slice(0,6) : (Array.isArray(npc?.chat_behavior?.smallTalkLines) ? npc.chat_behavior.smallTalkLines.slice(0,6) : []),
+    busy: Array.isArray(t.busy) ? t.busy.slice(0,6) : (Array.isArray(npc?.chat_behavior?.busyLines) ? npc.chat_behavior.busyLines.slice(0,6) : []),
+    topics: Array.isArray(t.topics) ? t.topics.map(x=>({ key:String(x.key||'').trim(), lines:Array.isArray(x.lines)?x.lines.slice(0,8):[] })) : []
+  } : null;
+
+  if (out && (out.smallTalk.length || out.busy.length || out.topics.length || out.roleDesc)) {
+    return out;
+  }
+
+  // Fallback to built-in packs by id/name
   const id = (npc.id || '').toLowerCase();
   const name = (npc.name || '').toLowerCase();
   return packs[id] || (name.includes('lily') ? packs.lily : name.includes('ava') ? packs.ava : null);

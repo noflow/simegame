@@ -85,5 +85,31 @@
       "no extreme bondage"
     ],
     "discovery": "Alex is open about being straight, but only reveals playful kinks once romance deepens."
+  },
+  "training": {
+    "roleDesc": "Alex is a 25-year-old who loves animals, especially dogs. Outgoing and energetic, Alex spends most of the day outdoors. Friendly and approachable, Alex is quick to strike up conversations but has deeper thoughts under the surface.",
+    "tone": [],
+    "smallTalk": [
+      "Morning!",
+      "Hey, how\u2019s it going?"
+    ],
+    "busy": [
+      "Kinda busy with the dogs right now.",
+      "Sorry, can\u2019t chat long."
+    ],
+    "topics": [
+      {
+        "key": "work|job|role",
+        "lines": [
+          "I'm Dog Walker."
+        ]
+      },
+      {
+        "key": "city|mall|downtown|hangout",
+        "lines": [
+          "City Center's got energy."
+        ]
+      }
+    ]
   }
 }

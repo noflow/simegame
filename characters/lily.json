@@ -87,5 +87,31 @@
   "greetings": {
     "home": "Yo, you seen my headphones?",
     "casual": "Sup. Got plans?"
+  },
+  "training": {
+    "roleDesc": "Outgoing and confident with a reckless streak; blunt but secretly tender-hearted.",
+    "tone": [],
+    "smallTalk": [
+      "You look beat\u2014want a snack?",
+      "We should hit the city this weekend."
+    ],
+    "busy": [
+      "Can this wait? I\u2019ve got a deadline.",
+      "Ugh\u2014study crunch. Later?"
+    ],
+    "topics": [
+      {
+        "key": "work|job|role",
+        "lines": [
+          "I'm College Student (Psychology)."
+        ]
+      },
+      {
+        "key": "city|mall|downtown|hangout",
+        "lines": [
+          "City Center's got energy."
+        ]
+      }
+    ]
   }
 }
