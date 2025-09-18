@@ -71,10 +71,10 @@ function ensureModal(){
     modal.innerHTML = [
       '<style>',
       '.cosmosrp{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:3000}',
-      '.cosmosrp-card{width:min(1100px,96vw);max-height:90vh;border:1px solid #1b222b;border-radius:14px;overflow:hidden;background:#0d0f13;color:#dfe6f1;display:flex;flex-direction:column}',
+      '.cosmosrp-card{width:min(1100px,96vw);max-height:90vh;border:1px solid #1b222b;border-radius:14px;overflow:hidden;background:#0d0f13;color:#dfe6f1;display:flex;flex-direction:column;min-height:0}',
       '.cosmosrp-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1b222b}',
-      '.cosmosrp-body{display:flex;gap:10px;padding:12px;min-height:320px;flex:1;overflow:hidden}',
-      '.cosmosrp-log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;background:#0d0f13;border:1px solid #1b222b;border-radius:10px;padding:10px;overscroll-behavior:contain;scrollbar-gutter:stable both-edges}',
+      '.cosmosrp-body{display:flex;gap:10px;padding:12px;min-height:0;flex:1 1 auto;overflow:hidden}',
+      '.cosmosrp-log{flex:1 1 auto;min-height:0;height:0;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:8px;background:#0d0f13;border:1px solid #1b222b;border-radius:10px;padding:10px;overscroll-behavior:contain;scrollbar-gutter:stable both-edges}',
       '.msg{padding:6px 8px;border-radius:8px;background:#121722;max-width:100%;word-break:break-word;overflow-wrap:anywhere;white-space:pre-wrap} .msg.you{background:#162235} .msg strong{color:#9ec1ff}',
       '.cosmosrp-actions{display:flex;gap:8px;padding:12px;border-top:1px solid #1b222b}',
       '.btn-ghost{background:transparent;border:1px solid #263040;color:#bcd;padding:6px 10px;border-radius:8px}',
@@ -141,7 +141,11 @@ function renderChat(){
       html += '<div class="msg '+cls+'"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
     }
     log.innerHTML = html;
-    try{ log.scrollTop = log.scrollHeight; requestAnimationFrame(()=>{ try{ log.scrollTop = log.scrollHeight; }catch(_e){} }); }catch(_e){}
+    try{
+      log.scrollTop = log.scrollHeight;
+      requestAnimationFrame(()=>{ try{ log.scrollTop = log.scrollHeight; }catch(_e){} });
+      requestAnimationFrame(()=>{ try{ log.scrollTop = log.scrollHeight; }catch(_e){} });
+    }catch(_e){}
   }catch(e){ console.warn('renderChat failed', e); }
 }
 window.renderChat = renderChat;
