@@ -313,6 +313,18 @@ if (!window.GameUI.startChat) { window.GameUI.startChat = function(n){ if (windo
 if (!window.GameUI.closeChat) { window.GameUI.closeChat = function(){ if (window.closeChatModal) closeChatModal(); }; }
 if (!window.GameUI.sendCurrentMessage) { window.GameUI.sendCurrentMessage = function(){ if (window.sendCurrentMessage) window.sendCurrentMessage(); }; }
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var dups = document.querySelectorAll('#chatModal');
+  if (dups && dups.length > 1) {
+    for (var i = 1; i < dups.length; i++) {
+      try { dups[i].remove(); } catch(_e){}
+    }
+  }
+});
+</script>
+
 <script type="module" src="./chat/runtime.js?v=34"></script>
 <script type="module" src="./src/main.js?v=21"></script> <!-- bump v to clear cache -->
 

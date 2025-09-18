@@ -129,6 +129,39 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         '</div>'
       ].join('');
       document.body.appendChild(modal);
+      // Ensure required children exist; if not, rebuild the modal content
+      try {
+        var _log = modal.querySelector('#chatLog');
+        var _form = modal.querySelector('#chatForm');
+        var _input = modal.querySelector('#chatInput');
+        if (!_log || !_form || !_input) {
+          modal.innerHTML = [
+            '<div class="cosmosrp" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:3000">',
+            '  <div class="cosmosrp-card" style="width:min(1100px,96vw);max-height:90vh;border:1px solid #1b222b;border-radius:14px;overflow:hidden;background:var(--panel)">',
+            '    <div class="cosmosrp-head" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1b222b">',
+            '      <strong id="chatTitle">Chat</strong>',
+            '      <div class="row" style="gap:8px">',
+            '        <button id="chatClear" class="btn-ghost">Clear</button>',
+            '        <button id="chatClose" data-chat-close class="btn-ghost">Close</button>',
+            '      </div>',
+            '    </div>',
+            '    <div class="cosmosrp-body" style="display:flex;gap:10px;padding:12px;min-height:420px">',
+            '      <div id="chatLog" class="cosmosrp-log" style="flex:1;overflow:auto;border:1px solid #1b222b;border-radius:10px;padding:10px"></div>',
+            '      <div class="cosmosrp-aside" style="width:220px">',
+            '        <div>Friendship: <span id="meterFriend">0</span></div>',
+            '        <div>Romance: <span id="meterRomance">0</span></div>',
+            '      </div>',
+            '    </div>',
+            '    <form id="chatForm" novalidate class="cosmosrp-actions" style="display:flex;gap:8px;padding:12px;border-top:1px solid #1b222b">',
+            '      <input id="chatInput" type="text" autocomplete="off" placeholder="Say something..." style="flex:1">',
+            '      <button id="sendBtn" type="submit" class="btn-primary">Send</button>',
+            '    </form>',
+            '  </div>',
+            '</div>'
+          ].join('');
+        }
+      } catch(_e) {}
+
       try { window.ChatDebug && ChatDebug.log('ensureModal: modal created'); } catch(e){}
 
       // Wire form + send + enter (keydown/keypress/keyup)
@@ -198,8 +231,16 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         var modal = document.getElementById('chatModal');
         if (!modal) return;
         var log = modal.querySelector('#chatLog');
-        if (!log) return;
+        if (!log) {
+          var body = modal.querySelector('.cosmosrp-body') || modal;
+          log = document.createElement('div');
+          log.id = 'chatLog';
+          log.className = 'cosmosrp-log';
+          log.setAttribute('style','flex:1;overflow:auto;border:1px solid #1b222b;border-radius:10px;padding:10px');
+          body.insertBefore(log, body.firstChild);
+        }
         var relId = window.currentNpcId || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
+        if (relId && typeof relId === 'object') { try { window.ChatDebug && ChatDebug.log('renderChat: normalize relId object', relId); }catch(_e){}; relId = relId.id || String(relId); }
         var rel = (typeof getRelationship==='function' ? getRelationship(relId) : null);
         if (!rel) {
           rel = { history: [], friendship: 0, romance: 0 };
@@ -231,6 +272,10 @@ if (window.__CHAT_RUNTIME_LOADED__) {
     if (!modal) return;
     var wrap = modal.querySelector('.cosmosrp');
     if (wrap) wrap.style.display = 'none';
+    
+    try { if (document.activeElement) document.activeElement.blur(); } catch(_e){}
+    try { document.body.focus(); } catch(_e){}
+    try { modal.setAttribute('inert',''); } catch(_e){}
     modal.setAttribute('aria-hidden','true');
     var input = modal.querySelector('#chatInput');
     if (input) input.blur();
@@ -345,7 +390,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.sendCurrentMessage = sendCurrentMessage;
 
   // --- Start chat (accepts NPC object or id) ---
-  function startChat(npcOrId) { try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
+  \1 try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){} try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
     try {
       var npc = null;
       if (npcOrId && typeof npcOrId === 'object') {
@@ -372,7 +417,7 @@ if (window.__CHAT_RUNTIME_LOADED__) {
         wrap.style.display = 'flex';
       }
 
-      modal.removeAttribute('aria-hidden');
+      modal.removeAttribute('aria-hidden'); try{ modal.removeAttribute('inert'); }catch(_e){}
 
       try {
         var relInit = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : null;
