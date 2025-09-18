@@ -1,3 +1,4 @@
+export const ROUTER_BUILD = 'v2-gender-loc-qa-002';
 // router.v2.js (grounded replies w/ gender & location & "who am i")
 export async function respondToV2(userText, ctx) {
   try {
