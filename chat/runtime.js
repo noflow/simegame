@@ -390,62 +390,64 @@ if (window.__CHAT_RUNTIME_LOADED__) {
   window.sendCurrentMessage = sendCurrentMessage;
 
   // --- Start chat (accepts NPC object or id) ---
-    try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){} try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
-    try {
-      var npc = null;
-      if (npcOrId && typeof npcOrId === 'object') {
-        npc = npcOrId;
-      } else if (typeof getNpcById === 'function' && npcOrId) {
-        npc = getNpcById(npcOrId);
-      }
-
-      if (npc && npc.id) {
-        window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
-        window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
-      } else if (!window.currentNpcId) {
-        window.currentNpcId = 'lily';
-      }
-
-      var modal = (typeof ensureModal === 'function' ? ensureModal() : document.getElementById('chatModal'));
-      if (!modal) {
-        console.warn('startChat: #chatModal not found');
-        return;
-      }
-
-      var wrap = modal.querySelector('.cosmosrp');
-      if (wrap) {
-        wrap.style.display = 'flex';
-      }
-
-      modal.removeAttribute('aria-hidden'); try{ modal.removeAttribute('inert'); }catch(_e){}
-
-      try {
-        var relInit = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : null;
-        if (!relInit) {
-          relInit = { history: [], friendship: 0, romance: 0 };
-          if (typeof setRelationship === 'function') {
-            setRelationship(window.currentNpcId, relInit);
-          }
-        }
-      } catch (e) {}
-
-      try {
-        var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
-        var title = modal.querySelector('#chatTitle');
-        if (title && npc2 && npc2.name) {
-          title.textContent = npc2.name;
-        }
-      } catch (e) {}
-
-      var input = modal.querySelector('#chatInput');
-      if (input) { try{ window.ChatDebug && ChatDebug.log('startChat: focusing input'); }catch(_e){} input.focus(); }
-
-      if (typeof renderChat === 'function') renderChat();
-
-    } catch (e) {
-      console.error('startChat error:', e);
-    }
+// --- Start chat (accepts NPC object or id) ---
+try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
+try{ window.ChatDebug && ChatDebug.log('startChat called', {npcOrId: npcOrId}); }catch(_e){}
+try {
+  var npc = null;
+  if (npcOrId && typeof npcOrId === 'object') {
+    npc = npcOrId;
+  } else if (typeof getNpcById === 'function' && npcOrId) {
+    npc = getNpcById(npcOrId);
   }
+
+  if (npc && npc.id) {
+    window.currentNpcId = npc.id; try{ window.ChatDebug && ChatDebug.log('startChat: set currentNpcId', {id:npc.id,name:npc.name}); }catch(_e){}
+    window.ActiveNPC = npc; try{ window.ChatDebug && ChatDebug.log('sendCurrentMessage: target npc', {id:npc && npc.id, name:npc && npc.name}); }catch(_e){}
+  } else if (!window.currentNpcId) {
+    window.currentNpcId = 'lily';
+  }
+
+  var modal = (typeof ensureModal === 'function' ? ensureModal() : document.getElementById('chatModal'));
+  if (!modal) {
+    console.warn('startChat: #chatModal not found');
+    return;
+  }
+
+  var wrap = modal.querySelector('.cosmosrp');
+  if (wrap) {
+    wrap.style.display = 'flex';
+  }
+
+  modal.removeAttribute('aria-hidden'); try{ modal.removeAttribute('inert'); }catch(_e){}
+
+  try {
+    var relInit = (typeof getRelationship === 'function') ? getRelationship(window.currentNpcId) : null;
+    if (!relInit) {
+      relInit = { history: [], friendship: 0, romance: 0 };
+      if (typeof setRelationship === 'function') {
+        setRelationship(window.currentNpcId, relInit);
+      }
+    }
+  } catch (e) {}
+
+  try {
+    var npc2 = npc || (typeof getNpcById === 'function' ? getNpcById(window.currentNpcId) : null);
+    var title = modal.querySelector('#chatTitle');
+    if (title && npc2 && npc2.name) {
+      title.textContent = npc2.name;
+    }
+  } catch (e) {}
+
+  var input = modal.querySelector('#chatInput');
+  if (input) { try{ window.ChatDebug && ChatDebug.log('startChat: focusing input'); }catch(_e){} input.focus(); }
+
+  if (typeof renderChat === 'function') renderChat();
+
+} catch (e) {
+  console.error('startChat error:', e);
+}
+
 
   // Attach to global scope
   window.startChat = startChat;
