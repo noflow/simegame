@@ -120,7 +120,8 @@ export async function respondToV2(userText, ctx){
     const reHow = /\b(how are you|how's it going|how are u|how r (you|u))\b/;
     const reWhere = /\b(where(\s+are|\s*r)?\s*(you|u|ya)|where\s+(are\s+)?you\s+at|where\s+u\s+at|where\s*are\s*you\s*right\s*now|where\s+is\s+this|what\s+(place|location))\b/;
     const reWhoAmI = /\b(who\s+am\s+i|do\s+you\s+know\s+who\s+i\s+am|do\s+you\s+know\s+my\s+name|what('?| i)?s\s+my\s+name|what\s+is\s+my\s+name)\b/;
-    const reWhatDoYouDo = /\b(what\s+do\s+you\s+do|your\s+job|what\s+is\s+your\s+work|what\s+is\s+your\s+role)\b/;
+    const reWhatDoYouDo
+    const isAllowedIntent = reHi.test(lower) || reHow.test(lower) || reWhere.test(lower) || reWhoAmI.test(lower) || reWhatDoYouDo.test(lower); = /\b(what\s+do\s+you\s+do|your\s+job|what\s+is\s+your\s+work|what\s+is\s+your\s+role)\b/;
 
     
     // Movement intents: "let's go to the living room", "go to city center"
@@ -133,8 +134,11 @@ export async function respondToV2(userText, ctx){
       return line + directive;
     }
 const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
-    const currentFriend = Number(rel?.friendship?.level || npc?.friendship?.level || 0);
-    const tooLow = currentFriend < minTalk;
+const currentFriend = Number(rel?.friendship?.level || npc?.friendship?.level || 0);
+// Lower the gate for family and close relations
+let effectiveMin = minTalk;
+if (npc && (npc.familyRelation || npc.family || npc.relationship==='family')) effectiveMin = Math.max(0, minTalk - 20);
+const tooLow = currentFriend < effectiveMin;
 
     const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
       ? `Got it — I'll use ${pr.pair}.`
@@ -142,34 +146,46 @@ const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
 
     const respond = (short, long) => (style === 'concise' ? short : (long || short));
 
-    // Gate on minTalkLevel (busy tone)
-    if (tooLow){
-      const line = sample(pack?.busy) || sample(npc?.chat_behavior?.busyLines) || "I'm wrapped up—later?";
-      return respond(line, line);
-    }
+    // Gate on minTalkLevel (but allow basic Q&A)
+if (tooLow && !isAllowedIntent){
+  const line = sample(pack?.busy) || sample(npc?.chat_behavior?.busyLines) || "I'm wrapped up—later?";
+  return respond(line, line);
+}
+
+
+    const busyHint = (tooLow && isAllowedIntent) ? ' (I’m a bit swamped.)' : '';
 
     // Greeting / How
     if (reHi.test(lower) || reHow.test(lower)){
       if (reHow.test(lower)){
         const base = respond(`I'm alright—here at the ${place}. You?`, `I'm alright—here at the ${place}. How about you?`);
-        return pronounHint ? `${base} ${pronounHint}` : base;
+        let ret = pronounHint ? `${base} ${pronounHint}` : base;
+      if (busyHint) ret += busyHint;
+      return ret;
       }
       const mood = sample(pack?.smallTalk) || sample(npc?.chat_behavior?.smallTalkLines) || 'Hey.';
       const base = respond(mood, mood);
-      return pronounHint ? `${base} ${pronounHint}` : base;
+      let ret = pronounHint ? `${base} ${pronounHint}` : base;
+      if (busyHint) ret += busyHint;
+      return ret;
     }
 
     // Where are you?
     if (reWhere.test(lower)){
-      const base = respond(`We're at the ${place}.`, `We're at the ${place}.`);
-      return pronounHint ? `${base} ${pronounHint}` : base;
+      let base = respond(`We're at the ${place}.`, `We're at the ${place}.`);
+      if (busyHint) base += busyHint;
+      let ret = pronounHint ? `${base} ${pronounHint}` : base;
+      if (busyHint) ret += busyHint;
+      return ret;
     }
 
     // Who am I?
     if (reWhoAmI.test(lower)){
       const nm = (player && player.name && player.name !== 'You') ? player.name : null;
       const base = nm ? `You're ${nm}.` : `You're you. If you want me to use a different name, tell me what to call you.`;
-      return pronounHint ? `${base} I keep ${pr.subj}/${pr.obj} in mind.` : base;
+      let out = pronounHint ? `${base} I keep ${pr.subj}/${pr.obj} in mind.` : base;
+      if (busyHint) out += busyHint;
+      return out;
     }
 
     // What do you do?
@@ -177,7 +193,9 @@ const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
       const role = npc.role || 'friend';
       const roleLine = pack?.roleDesc ? `I'm ${/^(a|an)\b/i.test(role) ? '' : 'a '}${role}. ${pack.roleDesc}`.trim()
                                       : `I'm ${/^(a|an)\b/i.test(role) ? '' : 'a '}${role}.`;
-      return respond(roleLine, roleLine);
+      let outRole = respond(roleLine, roleLine);
+      if (busyHint) outRole += busyHint;
+      return outRole;
     }
 
     // Movement request
