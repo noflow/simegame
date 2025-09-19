@@ -67,20 +67,23 @@ export async function respondToV2(userText, ctx){
     const pr = pronounPack(player.gender);
     const lower = text.toLowerCase();
     const pack = getPack(npc);
-    const mode = (localStorage.getItem('ai_mode') || 'hybrid'); // 'hybrid' | 'llm' | 'router'
-    const freedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.5)));
+
+    const __aiMode = (localStorage.getItem('ai_mode') || 'hybrid'); // 'hybrid' | 'llm' | 'router'
+    const __aiFreedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.5)));
     async function hybridGenerate(){
-      if (mode === 'llm' || (mode==='hybrid' && Math.random() < 0.5)){
+      if (__aiMode === 'llm' || (__aiMode==='hybrid' && Math.random() < 0.5)){
         const llm = await generateLLM(userText, { npc, world, player, relationship: (ctx && ctx.relationship)||null });
-        if (llm) return llm;
+        if (llm && typeof llm === 'string' && llm.trim()) return llm.trim();
       }
-      if (mode !== 'router' && Math.random() < freedom){
+      if (__aiMode !== 'router' && Math.random() < __aiFreedom){
         try { return generateLocal(userText, ctx, pack); } catch(_e){}
       }
       return null;
     }
+
+    
     // Freedom dial: 0..1 (default 0.35)
-    const freedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.35)));
+
     function freeformLine(){
       const z = zoneOf(place);
       const tone = (pack && pack.tone) || [];
