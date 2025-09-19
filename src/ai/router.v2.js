@@ -65,6 +65,26 @@ export async function respondToV2(userText, ctx){
     const pr = pronounPack(player.gender);
     const lower = text.toLowerCase();
     const pack = getPack(npc);
+    // Freedom dial: 0..1 (fallback to 0.4)
+    const freedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.4)));
+    function freeformLine(){
+      const z = zoneOf(place);
+      const tone = (pack && pack.tone) || [];
+      const flavor = tone && tone.length ? tone[0] : (npc.persona || '').split(';')[0].trim();
+      // City ideas
+      const cityActs = ['people-watch', 'grab coffee', 'browse the mall', 'walk the plaza', 'hit the park'];
+      // Home ideas
+      const homeActs = ['talk in the Kitchen', 'move to the Living Room', 'keep it low in the Bedroom'];
+      const act = (z==='city') ? cityActs[Math.floor(Math.random()*cityActs.length)]
+                               : homeActs[Math.floor(Math.random()*homeActs.length)];
+      const hooks = ['What do you think?', 'Want to?', 'If you're up for it.', 'Your call.'];
+      const hook = hooks[Math.floor(Math.random()*hooks.length)];
+      const base = flavor ? `${flavor}.` : `${npc.name}.`;
+      let line = `${base} We could ${act}. ${hook}`;
+      // Keep strictly in scene; no unrelated jumps
+      line = line.replace(/\b(move to the Living Room)\b/i, 'shift to the Living Room');
+      return line.trim();
+    }
 
     
     // Location-aware suggestion (occasional, expressive only)
