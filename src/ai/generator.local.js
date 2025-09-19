@@ -1,0 +1,40 @@
+// src/ai/generator.local.js
+const STOP = new Set(['the','a','an','and','or','but','if','then','so','than','that','this','those','these','of','to','in','on','at','for','from','as','is','are','was','were','be','been','it','you','your','yours','me','my','we','our','they','their','with','by','about','what','who','where','when','why','how','do','does','did','am','im','i','u','yo','hey','hi','hello']);
+function zoneOf(place){
+  const p = String(place||'').toLowerCase();
+  if (p.includes('city') || p.includes('plaza') || p.includes('mall') || p.includes('park')) return 'city';
+  if (p.includes('room') || p.includes('kitchen') || p.includes('living') || p.includes('apartment')) return 'home';
+  return 'city';
+}
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function keywords(text){
+  const words = String(text||'').toLowerCase().split(/[^a-z0-9']+/).filter(Boolean);
+  const uniq = [];
+  for (const w of words){
+    const ww = w.replace(/^'+|'+$/g,'');
+    if (ww && ww.length>2 && !STOP.has(ww) && !uniq.includes(ww)) uniq.push(ww);
+    if (uniq.length>=5) break;
+  }
+  return uniq;
+}
+export function generateLocal(userText, ctx, pack){
+  const npc = (ctx && ctx.npc) || { name:'NPC', role:'friend' };
+  const world = (ctx && ctx.world) || {};
+  const place = String(world.location || 'City');
+  const z = zoneOf(place);
+  const tones = (pack && pack.tone) || [];
+  const persona = (npc.persona || '').split(';')[0].trim();
+  const vibe = tones[0] || persona || '';
+  const ks = keywords(userText);
+  const cityActs = ['people-watch', 'grab coffee', 'browse the mall', 'walk the plaza', 'hit the park'];
+  const homeActs = ['talk in the Kitchen', 'shift to the Living Room', 'keep it low in the Bedroom'];
+  const act = (z==='city') ? pick(cityActs) : pick(homeActs);
+  const openers = ['Okay,', 'Honestly,', 'Hmm,', 'You know,', 'Alright,'];
+  const qhooks = ['What do you think?', 'That track?', 'Sound fair?', 'Want to?', 'Your call.'];
+  const kw = ks.length ? ks[0] : null;
+  const one = kw ? `${pick(openers)} about ${kw}—I hear you.` : `${pick(openers)} I’m listening.`;
+  const two = `We could ${act}. ${pick(qhooks)}`;
+  const vibeBit = vibe ? ` ${vibe[0].toUpperCase()+vibe.slice(1)} vibe today.` : '';
+  return `${one} ${two}${vibeBit}`.trim();
+}
+export default generateLocal;

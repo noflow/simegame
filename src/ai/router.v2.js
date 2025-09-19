@@ -1,5 +1,7 @@
 export const ROUTER_BUILD = 'v3.0-training';
 import { getPack, matchTopic, sample } from './training.js';
+import { generateLocal } from './generator.local.js';
+import { generateLLM } from './bridge.js';
 
 function normalizePlaceName(name){
   if (!name) return 'City';
@@ -65,6 +67,18 @@ export async function respondToV2(userText, ctx){
     const pr = pronounPack(player.gender);
     const lower = text.toLowerCase();
     const pack = getPack(npc);
+    const mode = (localStorage.getItem('ai_mode') || 'hybrid'); // 'hybrid' | 'llm' | 'router'
+    const freedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.5)));
+    async function hybridGenerate(){
+      if (mode === 'llm' || (mode==='hybrid' && Math.random() < 0.5)){
+        const llm = await generateLLM(userText, { npc, world, player, relationship: (ctx && ctx.relationship)||null });
+        if (llm) return llm;
+      }
+      if (mode !== 'router' && Math.random() < freedom){
+        try { return generateLocal(userText, ctx, pack); } catch(_e){}
+      }
+      return null;
+    }
     // Freedom dial: 0..1 (default 0.35)
     const freedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.35)));
     function freeformLine(){
@@ -168,6 +182,12 @@ const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
       const m = lower.match(reMove);
       const raw = (m && (m[5]||'').trim()) || '';
       if (raw) return movementReply(raw);
+    }
+
+    // Hybrid organic generation
+    {
+      const gen = await hybridGenerate();
+      if (gen) return gen;
     }
 
     // Topic pick from training
