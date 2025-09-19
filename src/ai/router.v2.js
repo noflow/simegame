@@ -67,6 +67,13 @@ export async function respondToV2(userText, ctx){
     const pr = pronounPack(player.gender);
     const lower = text.toLowerCase();
     const pack = getPack(npc);
+    // Intent regexes (normalized)
+    const reHi = /\b(hi|hello|hey|yo|sup)\b/i;
+    const reHow = /\b(how are you|how's it going|how are u|how r (you|u))\b/i;
+    const reWhere = /\b(where(\s+are|\s*r)?\s*(you|u|ya)|where\s+(are\s+)?you\s+at|where\s+u\s+at|where\s*are\s*you\s*right\s*now|where\s+is\s+this|what\s+(place|location))\b/i;
+    const reWhoAmI = /\b(who\s+am\s+i|do\s+you\s+know\s+who\s+i\s+am|do\s+you\s+know\s+my\s+name|what('?| i)?s\s+my\s+name|what\s+is\s+my\s+name)\b/i;
+    const reWhatDoYouDo = /\b(what\s+do\s+you\s+do|your\s+job|what\s+is\s+your\s+work|what\s+is\s+your\s+role)\b/i;
+    const isAllowedIntent = reHi.test(lower) || reHow.test(lower) || reWhere.test(lower) || reWhoAmI.test(lower) || reWhatDoYouDo.test(lower);
 
     const __aiMode = (localStorage.getItem('ai_mode') || 'hybrid'); // 'hybrid' | 'llm' | 'router'
     const __aiFreedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.5)));
@@ -80,10 +87,8 @@ export async function respondToV2(userText, ctx){
       }
       return null;
     }
-
-    
     // Freedom dial: 0..1 (default 0.35)
-
+    const freedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.35)));
     function freeformLine(){
       const z = zoneOf(place);
       const tone = (pack && pack.tone) || [];
@@ -116,13 +121,7 @@ export async function respondToV2(userText, ctx){
       }
     }
 // Intents
-    const reHi = /\b(hi|hello|hey|yo|sup)\b/;
-    const reHow = /\b(how are you|how's it going|how are u|how r (you|u))\b/;
-    const reWhere = /\b(where(\s+are|\s*r)?\s*(you|u|ya)|where\s+(are\s+)?you\s+at|where\s+u\s+at|where\s*are\s*you\s*right\s*now|where\s+is\s+this|what\s+(place|location))\b/;
-    const reWhoAmI = /\b(who\s+am\s+i|do\s+you\s+know\s+who\s+i\s+am|do\s+you\s+know\s+my\s+name|what('?| i)?s\s+my\s+name|what\s+is\s+my\s+name)\b/;
-    const reWhatDoYouDo
-    const isAllowedIntent = reHi.test(lower) || reHow.test(lower) || reWhere.test(lower) || reWhoAmI.test(lower) || reWhatDoYouDo.test(lower); = /\b(what\s+do\s+you\s+do|your\s+job|what\s+is\s+your\s+work|what\s+is\s+your\s+role)\b/;
-
+    
     
     // Movement intents: "let's go to the living room", "go to city center"
     const reMove = /\b(let'?s\s+)?(go|move|head|walk)\s+(to|into)\s+(the\s+)?([a-z][a-z\s']+)\b/;
@@ -134,11 +133,8 @@ export async function respondToV2(userText, ctx){
       return line + directive;
     }
 const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
-const currentFriend = Number(rel?.friendship?.level || npc?.friendship?.level || 0);
-// Lower the gate for family and close relations
-let effectiveMin = minTalk;
-if (npc && (npc.familyRelation || npc.family || npc.relationship==='family')) effectiveMin = Math.max(0, minTalk - 20);
-const tooLow = currentFriend < effectiveMin;
+    const currentFriend = Number(rel?.friendship?.level || npc?.friendship?.level || 0);
+    const tooLow = currentFriend < minTalk;
 
     const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
       ? `Got it — I'll use ${pr.pair}.`
@@ -146,12 +142,11 @@ const tooLow = currentFriend < effectiveMin;
 
     const respond = (short, long) => (style === 'concise' ? short : (long || short));
 
-    // Gate on minTalkLevel (but allow basic Q&A)
-if (tooLow && !isAllowedIntent){
-  const line = sample(pack?.busy) || sample(npc?.chat_behavior?.busyLines) || "I'm wrapped up—later?";
-  return respond(line, line);
-}
-
+    // Gate on minTalkLevel (busy tone)
+    if (tooLow && !isAllowedIntent) {
+      const line = sample(pack?.busy) || sample(npc?.chat_behavior?.busyLines) || "I'm wrapped up—later?";
+      return respond(line, line);
+    }
 
     const busyHint = (tooLow && isAllowedIntent) ? ' (I’m a bit swamped.)' : '';
 
