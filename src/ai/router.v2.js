@@ -20,44 +20,35 @@ function normalizePlaceName(name){
     'mall':'Mall',
     'plaza':'City Center',
     'park':'Park'
-  }\n
+  }
+
 // --- Variety helpers ---
-function recentContainsBusy(history, windowSize=5){
+function sample(arr){ return (Array.isArray(arr) && arr.length) ? arr[Math.floor(Math.random()*arr.length)] : null; }
+function recentContainsBusy(history, windowSize=6){
   try{
-    const busyNeedles = ["I’m a bit swamped","I'm a bit swamped","busy right now","crunched"];
+    const needles = ["I’m a bit swamped","I'm a bit swamped","busy right now","mid-sprint","crunched"];
     const slice = Array.isArray(history) ? history.slice(-windowSize) : [];
     return slice.some(h => {
       const t = (h && (h.text || h.message || h.content) || "").toLowerCase();
-      return busyNeedles.some(n => t.includes(n.lower ? n.lower() : n.toLowerCase()));
+      return needles.some(n => t.includes(n.toLowerCase()));
     });
   }catch(_e){ return false; }
 }
-
 function coffeeReply(place, freedom){
   const accept = freedom >= 0.4 ? Math.random() < (0.6 + (freedom-0.4)*0.3) : Math.random() < 0.4;
   const spots = ["Coffee Shop","City Center","Mall"];
   const dest = spots[Math.floor(Math.random()*spots.length)];
   if (accept){
-    const lines = [
-      "Yeah, I could use a boost.",
-      "Okay, quick one.",
-      "Sure—walk and talk?",
-      "You read my mind."
-    ];
-    const line = lines[Math.floor(Math.random()*lines.length)];
+    const lines = ["Yeah, I could use a boost.","Okay, quick one.","Sure—walk and talk?","You read my mind."];
+    const line = sample(lines);
     return `${line} [[MOVE:${dest}]]`;
   } else {
-    const lines = [
-      "Rain check? Timing’s tight.",
-      "Can’t step away—deadline glare.",
-      "Wish I could, but I’m mid-sprint."
-    ];
-    return lines[Math.floor(Math.random()*lines.length)];
+    const lines = ["Rain check? Timing’s tight.","Can’t step away—deadline glare.","Wish I could, but I’m mid-sprint."];
+    return sample(lines) || "Rain check?";
   }
 }
-\n
-function sample(arr){ return (Array.isArray(arr) && arr.length) ? arr[Math.floor(Math.random()*arr.length)] : null; }
-\n;
+
+;
   const key = n.toLowerCase();
   return map[key] || (n[0].toUpperCase() + n.slice(1));
 }

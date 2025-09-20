@@ -22,27 +22,6 @@
         model:  localStorage.getItem(LS.model)  || 'cosmosrp-v3.5',
         endpointOverride: localStorage.getItem(LS.endpointOverride) || ''
       };
-
-    // Prefill values
-    const st = CosmosSettings.load();
-    els.apiKey.value = st.apiKey;
-    els.baseUrl.value = st.baseUrl;
-    els.model.value = st.model || '';
-    els.endpointOverride.value = st.endpointOverride || '';
-    els.aiFreedom.value = st.aiFreedom;
-    els.aiFreedomNum.value = st.aiFreedom;
-    els.temperature.value = st.temperature;
-    els.temperatureNum.value = st.temperature;
-    els.maxTokens.value = st.maxTokens;
-
-    function syncFreedom(v){ const n = Math.max(0, Math.min(1.2, Number(v)||0)); els.aiFreedom.value = n; els.aiFreedomNum.value = n; }
-    function syncTemp(v){ const n = Math.max(0, Math.min(2, Number(v)||0)); els.temperature.value = n; els.temperatureNum.value = n; }
-
-    els.aiFreedom.addEventListener('input', ()=> syncFreedom(els.aiFreedom.value));
-    els.aiFreedomNum.addEventListener('input', ()=> syncFreedom(els.aiFreedomNum.value));
-    els.temperature.addEventListener('input', ()=> syncTemp(els.temperature.value));
-    els.temperatureNum.addEventListener('input', ()=> syncTemp(els.temperatureNum.value));
-
     },
     save({ apiKey, baseUrl, model, endpointOverride, aiFreedom, temperature, maxTokens }) {
       if (apiKey !== undefined) localStorage.setItem(LS.apiKey, apiKey);
@@ -237,6 +216,22 @@
           maxTokens: Number(els.maxTokens.value)
         });
       });
+
+      // Prefill + sync
+      const st = CosmosSettings.load();
+      els.apiKey.value = st.apiKey;
+      els.baseUrl.value = st.baseUrl;
+      els.model.value = st.model || '';
+      els.endpointOverride.value = st.endpointOverride || '';
+      els.aiFreedom.value = st.aiFreedom; els.aiFreedomNum.value = st.aiFreedom;
+      els.temperature.value = st.temperature; els.temperatureNum.value = st.temperature;
+      els.maxTokens.value = st.maxTokens;
+      function syncFreedom(v){ const n = Math.max(0, Math.min(1.2, Number(v)||0)); els.aiFreedom.value = n; els.aiFreedomNum.value = n; }
+      function syncTemp(v){ const n = Math.max(0, Math.min(2, Number(v)||0)); els.temperature.value = n; els.temperatureNum.value = n; }
+      els.aiFreedom.addEventListener('input', ()=> syncFreedom(els.aiFreedom.value));
+      els.aiFreedomNum.addEventListener('input', ()=> syncFreedom(els.aiFreedomNum.value));
+      els.temperature.addEventListener('input', ()=> syncTemp(els.temperature.value));
+      els.temperatureNum.addEventListener('input', ()=> syncTemp(els.temperatureNum.value));
     });
 
     els.testBtn.addEventListener('click', async () => {

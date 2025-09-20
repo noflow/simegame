@@ -515,8 +515,6 @@ function closeCharCreateModal(){
   const __op = overlay._opener || document.getElementById('openSettings') || document.body; if (__op && typeof __op.focus === 'function') __op.focus();
 }
 
-try{ if (!window.closeCharCreateModal) window.closeCharCreateModal = closeCharCreateModal; }catch(_e){}
-
 function wireCharCreateEvents(){
   document.getElementById('charCreateCloseBtn')?.addEventListener('click', closeCharCreateModal, { once:true });
   // Gender change re-renders selectors with defaults
@@ -961,3 +959,5 @@ function updateLoadIndicators(){
 
 
 window.GameReset = __clearAllGameData;
+
+try{ if (!window.closeCharCreateModal) window.closeCharCreateModal = closeCharCreateModal; }catch(_e){}
