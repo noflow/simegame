@@ -295,7 +295,7 @@ let __routerPromise = null;
 function getRespond(){
   if (window.respondToV2) return Promise.resolve(window.respondToV2);
   if (!__routerPromise){
-    __routerPromise = import('../src/ai/router.v2.js?v=20250918061249').then(m=> { try{ window.ChatDebug && ChatDebug.log('Router loaded', {build: m.ROUTER_BUILD || 'unknown'}); }catch(_e){}; return m.respondToV2 || m.default; });
+__routerPromise = import('../src/ai/router.v2.js').then(m => { try{ window.respondToV2 = m.respondToV2 || m.default; }catch(_e){} return window.respondToV2; });
   }
   return __routerPromise;
 }
