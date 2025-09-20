@@ -133,7 +133,11 @@ export async function respondToV2(userText, ctx){
       return line + directive;
     }
 const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
-    const currentFriend = Number((relationship && relationship.friendship) || (rel && rel.friendship) || (npc && npc.friendship && npc.friendship.level) || 0);
+    const currentFriend = Number(
+      (rel && (rel.friendship?.level ?? rel.friendship ?? rel.level ?? 0)) ||
+      (npc && (npc.friendship?.level ?? npc.friendship ?? 0)) ||
+      0
+    );
     const tooLow = currentFriend < minTalk;
 
     const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
