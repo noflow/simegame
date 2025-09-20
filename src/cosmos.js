@@ -5,10 +5,7 @@
     apiKey: 'cosmos.apiKey',
     baseUrl: 'cosmos.baseUrl',
     model: 'cosmos.model',
-    endpointOverride: 'cosmos.endpointOverride',
-    aiFreedom: 'cosmos.ai_freedom',
-    temperature: 'cosmos.temperature',
-    maxTokens: 'cosmos.max_tokens'
+    endpointOverride: 'cosmos.endpointOverride'
   };
 
   const CosmosSettings = {
@@ -16,21 +13,38 @@
       return {
         apiKey: localStorage.getItem(LS.apiKey) || '',
         baseUrl: localStorage.getItem(LS.baseUrl) || 'https://api.pawan.krd/cosmosrp/v1',
-        aiFreedom: Number(localStorage.getItem(LS.aiFreedom) || localStorage.getItem('ai_freedom') || 0.8),
-        temperature: Number(localStorage.getItem(LS.temperature) || 0.9),
-        maxTokens: Number(localStorage.getItem(LS.maxTokens) || 240),
         model:  localStorage.getItem(LS.model)  || 'cosmosrp-v3.5',
         endpointOverride: localStorage.getItem(LS.endpointOverride) || ''
       };
+    // Prefill values (guarded)
+    try {
+      const st = CosmosSettings.load();
+      if (els.apiKey) els.apiKey.value = st.apiKey || '';
+      if (els.baseUrl) els.baseUrl.value = st.baseUrl || '';
+      if (els.model) els.model.value = st.model || '';
+      if (els.endpointOverride) els.endpointOverride.value = st.endpointOverride || '';
+      if (els.aiFreedom && els.aiFreedomNum){
+        const f = Number(isFinite(st.aiFreedom) ? st.aiFreedom : 0.8);
+        els.aiFreedom.value = f; els.aiFreedomNum.value = f;
+      }
+      if (els.temperature && els.temperatureNum){
+        const t = Number(isFinite(st.temperature) ? st.temperature : 0.9);
+        els.temperature.value = t; els.temperatureNum.value = t;
+      }
+      if (els.maxTokens) els.maxTokens.value = Number(st.maxTokens || 240);
+      function syncFreedom(v){ const n = Math.max(0, Math.min(1.2, Number(v)||0)); if (els.aiFreedom) els.aiFreedom.value = n; if (els.aiFreedomNum) els.aiFreedomNum.value = n; }
+      function syncTemp(v){ const n = Math.max(0, Math.min(2, Number(v)||0)); if (els.temperature) els.temperature.value = n; if (els.temperatureNum) els.temperatureNum.value = n; }
+      if (els.aiFreedom) els.aiFreedom.addEventListener('input', ()=> syncFreedom(els.aiFreedom.value));
+      if (els.aiFreedomNum) els.aiFreedomNum.addEventListener('input', ()=> syncFreedom(els.aiFreedomNum.value));
+      if (els.temperature) els.temperature.addEventListener('input', ()=> syncTemp(els.temperature.value));
+      if (els.temperatureNum) els.temperatureNum.addEventListener('input', ()=> syncTemp(els.temperatureNum.value));
+    } catch(e){ console.warn('prefill error', e); }
     },
-    save({ apiKey, baseUrl, model, endpointOverride, aiFreedom, temperature, maxTokens }) {
+    save({ apiKey, baseUrl, model, endpointOverride }) {
       if (apiKey !== undefined) localStorage.setItem(LS.apiKey, apiKey);
       if (baseUrl !== undefined) localStorage.setItem(LS.baseUrl, baseUrl);
       if (model !== undefined) localStorage.setItem(LS.model, model);
       if (endpointOverride !== undefined) localStorage.setItem(LS.endpointOverride, endpointOverride);
-      if (aiFreedom !== undefined) { localStorage.setItem(LS.aiFreedom, String(aiFreedom)); localStorage.setItem('ai_freedom', String(aiFreedom)); }
-      if (temperature !== undefined) localStorage.setItem(LS.temperature, String(temperature));
-      if (maxTokens !== undefined) localStorage.setItem(LS.maxTokens, String(maxTokens));
     }
   };
 
@@ -131,7 +145,53 @@
     document.head.appendChild(style);
   }
 
-  function buildModal() {
+  
+  function ensureTuningRows(modal){
+    try{
+      const card = modal.querySelector('.cosmosrp-card');
+      if (!card) return;
+      const hasFreedom = !!getEl('#cosmos_aiFreedom');
+      const hasTemp    = !!getEl('#cosmos_temperature');
+      const hasMaxTok  = !!getEl('#cosmos_maxTokens');
+      const actions = modal.querySelector('.cosmosrp-actions');
+
+      function elFromHTML(html){
+        const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild;
+      }
+
+      if (!hasFreedom){
+        const node = elFromHTML(`
+          <div class="cosmosrp-row" style="display:grid;grid-template-columns: 1fr 3fr;gap:.5rem;align-items:center;">
+            <label>AI Freedom</label>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <input id="cosmos_aiFreedom" type="range" min="0" max="1.2" step="0.05" style="flex:1;">
+              <input id="cosmos_aiFreedom_num" type="number" min="0" max="1.2" step="0.05" style="width:70px;">
+            </div>
+          </div>`);
+        actions ? card.insertBefore(node, actions) : card.appendChild(node);
+      }
+      if (!hasTemp){
+        const node = elFromHTML(`
+          <div class="cosmosrp-row" style="display:grid;grid-template-columns: 1fr 3fr;gap:.5rem;align-items:center;">
+            <label>Temperature</label>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <input id="cosmos_temperature" type="range" min="0" max="2" step="0.05" style="flex:1;">
+              <input id="cosmos_temperature_num" type="number" min="0" max="2" step="0.05" style="width:70px;">
+            </div>
+          </div>`);
+        actions ? card.insertBefore(node, actions) : card.appendChild(node);
+      }
+      if (!hasMaxTok){
+        const node = elFromHTML(`
+          <div class="cosmosrp-row">
+            <label>Max Tokens</label>
+            <input id="cosmos_maxTokens" type="number" min="32" max="1000" step="1" placeholder="e.g. 240">
+          </div>`);
+        actions ? card.insertBefore(node, actions) : card.appendChild(node);
+      }
+    } catch(e){ console.warn('ensureTuningRows error', e); }
+  }
+function buildModal() {
     ensureStyles();
     const modal = document.createElement('div');
     modal.className = 'cosmosrp-modal';
@@ -158,30 +218,13 @@
             <input id="cosmos_endpointOverride" type="text" placeholder="https://api.pawan.krd/cosmosrp/v1/chat/completions">
           </div>
         </details>
-        <div class="cosmosrp-row" style="display:grid;grid-template-columns: 1fr 3fr;gap:.5rem;align-items:center;">
-          <label>AI Freedom</label>
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <input id="cosmos_aiFreedom" type="range" min="0" max="1.2" step="0.05" style="flex:1;">
-            <input id="cosmos_aiFreedom_num" type="number" min="0" max="1.2" step="0.05" style="width:70px;">
-          </div>
-        </div>
-        <div class="cosmosrp-row" style="display:grid;grid-template-columns: 1fr 3fr;gap:.5rem;align-items:center;">
-          <label>Temperature</label>
-          <div style="display:flex;gap:.5rem;align-items:center;">
-            <input id="cosmos_temperature" type="range" min="0" max="2" step="0.05" style="flex:1;">
-            <input id="cosmos_temperature_num" type="number" min="0" max="2" step="0.05" style="width:70px;">
-          </div>
-        </div>
-        <div class="cosmosrp-row">
-          <label>Max Tokens</label>
-          <input id="cosmos_maxTokens" type="number" min="32" max="1000" step="1" placeholder="e.g. 240">
-        </div>
         <div class="cosmosrp-actions">
           <button id="cosmos_test" type="button">Test Connection</button>
           <span id="cosmos_test_status" style="font-size:.9rem;opacity:.85"></span>
         </div>
       </div>
     `;
+    ensureTuningRows(modal);
     document.body.appendChild(modal);
 
     const closeBtn = modal.querySelector('.cosmosrp-close');
@@ -191,13 +234,14 @@
     });
 
     const s = CosmosSettings.load();
+    const getEl = (sel) => modal.querySelector(sel);
     const els = {
-      apiKey: modal.querySelector('#cosmos_apiKey'),
-      baseUrl: modal.querySelector('#cosmos_baseUrl'),
-      model: modal.querySelector('#cosmos_model'),
-      endpointOverride: modal.querySelector('#cosmos_endpointOverride'),
-      testBtn: modal.querySelector('#cosmos_test'),
-      testStatus: modal.querySelector('#cosmos_test_status'),
+      apiKey: getEl('#cosmos_apiKey'),
+      baseUrl: getEl('#cosmos_baseUrl'),
+      model: getEl('#cosmos_model'),
+      endpointOverride: getEl('#cosmos_endpointOverride'),
+      testBtn: getEl('#cosmos_test'),
+      testStatus: getEl('#cosmos_test_status'),
     };
     els.apiKey.value = s.apiKey;
     els.baseUrl.value = s.baseUrl;
@@ -207,31 +251,12 @@
     [els.apiKey, els.baseUrl, els.model, els.endpointOverride].forEach(inp => {
       inp.addEventListener('change', () => {
         CosmosSettings.save({
-          apiKey: els.apiKey.value.trim(),
-          baseUrl: els.baseUrl.value.trim(),
-          model: els.model.value.trim(),
-          endpointOverride: els.endpointOverride.value.trim(),
-          aiFreedom: Number(els.aiFreedomNum.value),
-          temperature: Number(els.temperatureNum.value),
-          maxTokens: Number(els.maxTokens.value)
+          apiKey: (els.apiKey && els.apiKey.value ? els.apiKey.value.trim() : ''),
+          baseUrl: (els.baseUrl && els.baseUrl.value ? els.baseUrl.value.trim() : ''),
+          model: (els.model && els.model.value ? els.model.value.trim() : ''),
+          endpointOverride: (els.endpointOverride && els.endpointOverride.value ? els.endpointOverride.value.trim() : '')
         });
       });
-
-      // Prefill + sync
-      const st = CosmosSettings.load();
-      els.apiKey.value = st.apiKey;
-      els.baseUrl.value = st.baseUrl;
-      els.model.value = st.model || '';
-      els.endpointOverride.value = st.endpointOverride || '';
-      els.aiFreedom.value = st.aiFreedom; els.aiFreedomNum.value = st.aiFreedom;
-      els.temperature.value = st.temperature; els.temperatureNum.value = st.temperature;
-      els.maxTokens.value = st.maxTokens;
-      function syncFreedom(v){ const n = Math.max(0, Math.min(1.2, Number(v)||0)); els.aiFreedom.value = n; els.aiFreedomNum.value = n; }
-      function syncTemp(v){ const n = Math.max(0, Math.min(2, Number(v)||0)); els.temperature.value = n; els.temperatureNum.value = n; }
-      els.aiFreedom.addEventListener('input', ()=> syncFreedom(els.aiFreedom.value));
-      els.aiFreedomNum.addEventListener('input', ()=> syncFreedom(els.aiFreedomNum.value));
-      els.temperature.addEventListener('input', ()=> syncTemp(els.temperature.value));
-      els.temperatureNum.addEventListener('input', ()=> syncTemp(els.temperatureNum.value));
     });
 
     els.testBtn.addEventListener('click', async () => {

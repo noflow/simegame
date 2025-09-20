@@ -959,5 +959,3 @@ function updateLoadIndicators(){
 
 
 window.GameReset = __clearAllGameData;
-
-try{ if (!window.closeCharCreateModal) window.closeCharCreateModal = closeCharCreateModal; }catch(_e){}

@@ -20,35 +20,7 @@ function normalizePlaceName(name){
     'mall':'Mall',
     'plaza':'City Center',
     'park':'Park'
-  }
-
-// --- Variety helpers ---
-function sample(arr){ return (Array.isArray(arr) && arr.length) ? arr[Math.floor(Math.random()*arr.length)] : null; }
-function recentContainsBusy(history, windowSize=6){
-  try{
-    const needles = ["I’m a bit swamped","I'm a bit swamped","busy right now","mid-sprint","crunched"];
-    const slice = Array.isArray(history) ? history.slice(-windowSize) : [];
-    return slice.some(h => {
-      const t = (h && (h.text || h.message || h.content) || "").toLowerCase();
-      return needles.some(n => t.includes(n.toLowerCase()));
-    });
-  }catch(_e){ return false; }
-}
-function coffeeReply(place, freedom){
-  const accept = freedom >= 0.4 ? Math.random() < (0.6 + (freedom-0.4)*0.3) : Math.random() < 0.4;
-  const spots = ["Coffee Shop","City Center","Mall"];
-  const dest = spots[Math.floor(Math.random()*spots.length)];
-  if (accept){
-    const lines = ["Yeah, I could use a boost.","Okay, quick one.","Sure—walk and talk?","You read my mind."];
-    const line = sample(lines);
-    return `${line} [[MOVE:${dest}]]`;
-  } else {
-    const lines = ["Rain check? Timing’s tight.","Can’t step away—deadline glare.","Wish I could, but I’m mid-sprint."];
-    return sample(lines) || "Rain check?";
-  }
-}
-
-;
+  };
   const key = n.toLowerCase();
   return map[key] || (n[0].toUpperCase() + n.slice(1));
 }
@@ -104,7 +76,7 @@ export async function respondToV2(userText, ctx){
     const isAllowedIntent = reHi.test(lower) || reHow.test(lower) || reWhere.test(lower) || reWhoAmI.test(lower) || reWhatDoYouDo.test(lower);
 
     const __aiMode = (localStorage.getItem('ai_mode') || 'hybrid'); // 'hybrid' | 'llm' | 'router'
-    const __aiFreedom = Math.max(0, Math.min(1.2, Number(localStorage.getItem('ai_freedom') || 0.5)));
+    const __aiFreedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.5)));
     async function hybridGenerate(){
       if (__aiMode === 'llm' || (__aiMode==='hybrid' && Math.random() < 0.5)){
         const llm = await generateLLM(userText, { npc, world, player, relationship: (ctx && ctx.relationship)||null });
@@ -116,7 +88,7 @@ export async function respondToV2(userText, ctx){
       return null;
     }
     // Freedom dial: 0..1 (default 0.35)
-    const freedom = Math.max(0, Math.min(1.2, Number(localStorage.getItem('ai_freedom') || 0.35)));
+    const freedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.35)));
     function freeformLine(){
       const z = zoneOf(place);
       const tone = (pack && pack.tone) || [];
@@ -161,11 +133,7 @@ export async function respondToV2(userText, ctx){
       return line + directive;
     }
 const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
-    const currentFriend = Number(
-      (rel && (rel.friendship?.level ?? rel.friendship ?? rel.level ?? 0)) ||
-      (npc && (npc.friendship?.level ?? npc.friendship ?? 0)) ||
-      0
-    );
+    const currentFriend = Number((relationship && relationship.friendship) || (rel && rel.friendship) || (npc && npc.friendship && npc.friendship.level) || 0);
     const tooLow = currentFriend < minTalk;
 
     const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
