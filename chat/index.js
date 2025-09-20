@@ -1,2 +1,8 @@
-// Chat index stub (v25): no-op to avoid double load.
-if(!window.__CHAT_INDEX_STUB__){window.__CHAT_INDEX_STUB__=true;}
+// chat/index.js (shim) — forward to unified runtime sender
+export function sendCurrentMessage() {
+  if (typeof window.sendCurrentMessage === 'function') {
+    window.sendCurrentMessage();
+  } else {
+    console.warn('sendCurrentMessage not yet available.');
+  }
+}
