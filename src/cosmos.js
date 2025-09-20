@@ -148,6 +148,7 @@
   
   function ensureTuningRows(modal){
     try{
+      const getEl = (sel) => modal.querySelector(sel);
       const card = modal.querySelector('.cosmosrp-card');
       if (!card) return;
       const hasFreedom = !!getEl('#cosmos_aiFreedom');
@@ -234,14 +235,13 @@ function buildModal() {
     });
 
     const s = CosmosSettings.load();
-    const getEl = (sel) => modal.querySelector(sel);
     const els = {
-      apiKey: getEl('#cosmos_apiKey'),
-      baseUrl: getEl('#cosmos_baseUrl'),
-      model: getEl('#cosmos_model'),
-      endpointOverride: getEl('#cosmos_endpointOverride'),
-      testBtn: getEl('#cosmos_test'),
-      testStatus: getEl('#cosmos_test_status'),
+      apiKey: modal.querySelector('#cosmos_apiKey'),
+      baseUrl: modal.querySelector('#cosmos_baseUrl'),
+      model: modal.querySelector('#cosmos_model'),
+      endpointOverride: modal.querySelector('#cosmos_endpointOverride'),
+      testBtn: modal.querySelector('#cosmos_test'),
+      testStatus: modal.querySelector('#cosmos_test_status'),
     };
     els.apiKey.value = s.apiKey;
     els.baseUrl.value = s.baseUrl;
@@ -251,10 +251,10 @@ function buildModal() {
     [els.apiKey, els.baseUrl, els.model, els.endpointOverride].forEach(inp => {
       inp.addEventListener('change', () => {
         CosmosSettings.save({
-          apiKey: (els.apiKey && els.apiKey.value ? els.apiKey.value.trim() : ''),
-          baseUrl: (els.baseUrl && els.baseUrl.value ? els.baseUrl.value.trim() : ''),
-          model: (els.model && els.model.value ? els.model.value.trim() : ''),
-          endpointOverride: (els.endpointOverride && els.endpointOverride.value ? els.endpointOverride.value.trim() : '')
+          apiKey: els.apiKey.value.trim(),
+          baseUrl: els.baseUrl.value.trim(),
+          model: els.model.value.trim(),
+          endpointOverride: els.endpointOverride.value.trim()
         });
       });
     });
