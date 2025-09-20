@@ -1,4 +1,83 @@
 
+// === Debug Banner (ai_mode + ai_freedom) ===
+function __getAiMode(){ try{ return localStorage.getItem('ai_mode') || 'hybrid'; }catch(_e){ return 'hybrid'; } }
+function __setAiMode(v){ try{ localStorage.setItem('ai_mode', v); }catch(_e){} }
+function __getAiFreedom(){ try{ return Number(localStorage.getItem('ai_freedom') || 0.5); }catch(_e){ return 0.5; } }
+function __setAiFreedom(v){ try{ localStorage.setItem('ai_freedom', String(v)); }catch(_e){} }
+
+function ensureDebugBanner(modal){
+  try{
+    const host = modal.querySelector('.cosmosrp') || modal;
+    let bar = host.querySelector('#aiDebugBar');
+    if (!bar){
+      bar = document.createElement('div');
+      bar.id = 'aiDebugBar';
+      bar.style.cssText = 'position:absolute; top:8px; right:8px; display:flex; gap:8px; align-items:center; padding:6px 8px; background:rgba(20,20,20,0.6); color:#fff; border-radius:10px; font:12px/1.2 system-ui; z-index:9999; backdrop-filter: blur(4px);';
+      bar.innerHTML = `
+        <span style="opacity:.8;">AI</span>
+        <select id="aiModeSel" style="background:#111; color:#fff; border:1px solid #444; border-radius:6px; padding:2px 6px;">
+          <option value="hybrid">hybrid</option>
+          <option value="router">router</option>
+          <option value="llm">llm</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:4px;">
+          <span>freedom</span>
+          <input id="aiFreedomRange" type="range" min="0" max="1.2" step="0.05" style="width:120px;">
+          <input id="aiFreedomNum" type="number" min="0" max="1.2" step="0.05" style="width:55px; background:#111; color:#fff; border:1px solid #444; border-radius:6px; padding:2px 4px;">
+        </label>
+        <button id="aiQuickCycle" title="Quick cycle ai_mode" style="background:#222; color:#fff; border:1px solid #444; border-radius:6px; padding:2px 6px;">Cycle</button>
+        <button id="aiSave" style="background:#0a7; color:#001; border:none; border-radius:6px; padding:2px 8px; font-weight:600;">Save</button>
+      `;
+      host.appendChild(bar);
+    }
+    const modeSel = bar.querySelector('#aiModeSel');
+    const range = bar.querySelector('#aiFreedomRange');
+    const num = bar.querySelector('#aiFreedomNum');
+    const save = bar.querySelector('#aiSave');
+    const cyc = bar.querySelector('#aiQuickCycle');
+
+    function syncFromStorage(){
+      const m = __getAiMode();
+      const f = __getAiFreedom();
+      modeSel.value = m;
+      range.value = isFinite(f) ? f : 0.5;
+      num.value = isFinite(f) ? f : 0.5;
+      bar.setAttribute('data-mode', m);
+      bar.setAttribute('data-freedom', String(f));
+      bar.title = `ai_mode: ${m} | ai_freedom: ${f}`;
+    }
+    function syncFreedom(val){
+      const v = Math.max(0, Math.min(1.2, Number(val)||0));
+      range.value = v; num.value = v;
+    }
+    range.addEventListener('input', ()=> syncFreedom(range.value));
+    num.addEventListener('input', ()=> syncFreedom(num.value));
+    save.addEventListener('click', ()=>{
+      __setAiMode(modeSel.value);
+      __setAiFreedom(Number(num.value));
+      syncFromStorage();
+    });
+    cyc.addEventListener('click', ()=>{
+      const modes = ['hybrid','router','llm'];
+      const cur = __getAiMode();
+      const idx = (modes.indexOf(cur)+1) % modes.length;
+      __setAiMode(modes[idx]);
+      syncFromStorage();
+    });
+
+    // keyboard: Alt+D toggles bar visibility
+    window.addEventListener('keydown', function(e){
+      if ((e.key==='d' || e.key==='D') && e.altKey){
+        bar.style.display = (bar.style.display==='none' ? 'flex' : 'none');
+      }
+    }, { once:false });
+
+    syncFromStorage();
+    return bar;
+  }catch(e){ console.warn('ensureDebugBanner error', e); return null; }
+}
+
+
 import * as __StateMod from '../src/state.js';
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
 // runtime.js (clean rewrite) — v35
@@ -278,6 +357,7 @@ function startChat(npcOrId){
     openChatModal();
     // wire listeners (once per modal create)
     const modal = ensureModal();
+  try { ensureDebugBanner(modal); } catch(_e){}
     const form = modal.querySelector('#chatForm');
     const sendBtn = modal.querySelector('#sendBtn');
     const closeBtn = modal.querySelector('#chatClose');
@@ -309,3 +389,12 @@ if (typeof window.appendMsgToLog !== 'function'){
 }
 
 try{ window.GameUI = window.GameUI || {}; window.GameUI.closeChatModal = closeChatModal; }catch(_e){}
+
+// ---- Ensure required globals for external callers ----
+try{ if (typeof window !== 'undefined') {
+  if (typeof window.appendMsgToLog === 'undefined' && typeof appendMsgToLog === 'function') window.appendMsgToLog = appendMsgToLog;
+  if (typeof window.sendCurrentMessage === 'undefined' && typeof sendCurrentMessage === 'function') window.sendCurrentMessage = sendCurrentMessage;
+  if (typeof window.renderChat === 'undefined' && typeof renderChat === 'function') window.renderChat = renderChat;
+}}catch(_e){}
+
+try { if (localStorage.getItem('ai_freedom') === null) localStorage.setItem('ai_freedom','1.2'); } catch(_e){}
