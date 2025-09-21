@@ -22,7 +22,7 @@ export async function llmChat(messages, opts = {}) {
     throw new Error(`LLM error ${res.status}: ${text}`);
   }
   const data = await res.json();
-  var text = data?.choices?.[0]?.message?.content ?? '';
+  const text = data?.choices?.[0]?.message?.content ?? '';
   return text;
 }
 

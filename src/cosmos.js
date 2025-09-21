@@ -33,7 +33,7 @@
   }
 
   async function callCosmosChat({ messages, temperature = 0.7, max_tokens = 512 }) {
-    var s = CosmosSettings.load();
+    const s = CosmosSettings.load();
     if (!s.apiKey) throw new Error('CosmosRP API key is missing in Settings.');
 
     const res = await fetch(cosmosEndpoint(), {
@@ -163,7 +163,7 @@
       if (e.target === modal) modal.style.display = 'none';
     });
 
-    var s = CosmosSettings.load();
+    const s = CosmosSettings.load();
     const els = {
       apiKey: modal.querySelector('#cosmos_apiKey'),
       baseUrl: modal.querySelector('#cosmos_baseUrl'),
@@ -213,7 +213,7 @@
   }
 
   function bootstrap() {
-    var modal = buildModal();
+    const modal = buildModal();
     ensureLauncher(modal);
   }
 

@@ -120,7 +120,7 @@ function openSettingsModal(){
   updateLoadIndicators();}
 
 function closeSettingsModal() {
-  var overlay = document.getElementById('settingsModal');
+  const overlay = document.getElementById('settingsModal');
   if (!overlay) return;
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden','true');
@@ -224,8 +224,8 @@ function randomScheduleFor(npc){
 async function aiSuggestSchedule(npc){
   try {
     if (!window.CosmosRP || !window.CosmosRP.callChat) throw new Error('No LLM configured');
-    var PLACES = getWorldPlaces(24);
-    var TIME_SLOTS = window.GameConst?.TIME_SLOTS || ["morning","lunch","afternoon"];
+    const PLACES = getWorldPlaces(24);
+    const TIME_SLOTS = window.GameConst?.TIME_SLOTS || ["morning","lunch","afternoon"];
     const system = `You output STRICT JSON ONLY: an array of schedule rules for an NPC in a slice-of-life game.
 Each item: { "location": "<one of provided places>", "days":[1..7], "slots":["<from provided slots>"] }
 Use days 1..7 where 1=Mon, 7=Sun. Use ONLY the provided places and slots.`;
@@ -243,8 +243,8 @@ Use days 1..7 where 1=Mon, 7=Sun. Use ONLY the provided places and slots.`;
 }
 
 async function ensureSchedule(npc){
-  var PLACES = getWorldPlaces(24);
-  var TIME_SLOTS = window.GameConst?.TIME_SLOTS || ["morning","lunch","afternoon"];
+  const PLACES = getWorldPlaces(24);
+  const TIME_SLOTS = window.GameConst?.TIME_SLOTS || ["morning","lunch","afternoon"];
   const hasUseful = Array.isArray(npc.schedule) && npc.schedule.some(r => r && r.location);
   if (hasUseful) {
     npc.schedule = sanitizeSchedule(npc.schedule, PLACES, TIME_SLOTS);
@@ -332,7 +332,7 @@ window.GameAI.llm = async (input, opts = {}) => {
 // ===== end CosmosRP wiring =====
 
 function advanceTime(){
-  var TIME_SLOTS = GameConst.TIME_SLOTS;
+  const TIME_SLOTS = GameConst.TIME_SLOTS;
   GameState.state.timeIndex++;
   if (GameState.state.timeIndex >= TIME_SLOTS.length) {
     GameState.state.timeIndex = 0;
@@ -422,15 +422,15 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
   const f = e.target.files?.[0];
   if (!f) return;
   try {
-    var text = await new Promise((res, rej) => {
-      var fr = new FileReader(); fr.onerror = () => rej(fr.error || new Error('Read failed')); fr.onload = () => res(String(fr.result || '')); fr.readAsText(f, 'utf-8');
+    const text = await new Promise((res, rej) => {
+      const fr = new FileReader(); fr.onerror = () => rej(fr.error || new Error('Read failed')); fr.onload = () => res(String(fr.result || '')); fr.readAsText(f, 'utf-8');
     });
     const json = JSON.parse(text);
     let npc = chubToNpc(json);
     await ensureSchedule(npc);
 
     const charsObj = getCharactersObj();
-    var list = Array.isArray(charsObj.characters) ? charsObj.characters : (charsObj.characters = []);
+    const list = Array.isArray(charsObj.characters) ? charsObj.characters : (charsObj.characters = []);
     npc.id = uniquifyId(npc.id, list);
     const i = list.findIndex(c => c.id === npc.id);
     if (i >= 0) list[i] = npc; else list.push(npc);
@@ -446,7 +446,7 @@ document.getElementById('chubFile')?.addEventListener('change', async (e) => {
 });
 
 document.getElementById('exportChars')?.addEventListener('click', () => {
-  var obj = getCharactersObj();
+  const obj = getCharactersObj();
   const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -480,7 +480,7 @@ function defaultAppearance(g='male'){
 }
 
 function openCharCreateModal(e){
-  var overlay = document.getElementById('charCreateModal');
+  const overlay = document.getElementById('charCreateModal');
   if (!overlay) return;
   overlay._opener = (e && e.currentTarget) || document.activeElement;
   overlay.style.display = 'flex';
@@ -506,7 +506,7 @@ function openCharCreateModal(e){
 }
 
 function closeCharCreateModal(){
-  var overlay = document.getElementById('charCreateModal');
+  const overlay = document.getElementById('charCreateModal');
   if (!overlay) return;
   if (overlay.contains(document.activeElement)) document.activeElement.blur();
   overlay.style.display = 'none';
@@ -534,7 +534,7 @@ function renderAppearanceSelectors(gender, ap){
   renderOptionStrip('ccLegs',  opts.legs,  ap.legs,  (v)=>{ ap.legs=v; updatePreview(ap); });
   updatePreview(ap);
   // stash draft on overlay for access on save
-  var overlay = document.getElementById('charCreateModal');
+  const overlay = document.getElementById('charCreateModal');
   overlay._apDraft = ap;
 }
 
@@ -568,12 +568,12 @@ function updatePreview(ap){
 }
 
 function saveCharacterFromModal(){
-  var overlay = document.getElementById('charCreateModal');
-  var name = document.getElementById('ccName')?.value?.trim() || '';
-  var gender = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
-  var ap = overlay?._apDraft || defaultAppearance(gender);
+  const overlay = document.getElementById('charCreateModal');
+  const name = document.getElementById('ccName')?.value?.trim() || '';
+  const gender = document.querySelector('input[name="ccGender"]:checked')?.value || 'male';
+  const ap = overlay?._apDraft || defaultAppearance(gender);
 
-  var player = {
+  const player = {
     name: name || 'Player',
     gender,
     age: 18,
@@ -590,17 +590,17 @@ function saveCharacterFromModal(){
 }
 
 function renderPlayerCard(){
-  var box = document.getElementById('sidebarInfo');
+  const box = document.getElementById('sidebarInfo');
   if (!box) return;
 
-  var p = (window.GameState && window.GameState.state && window.GameState.state.player) || null;
+  const p = (window.GameState && window.GameState.state && window.GameState.state.player) || null;
   box.innerHTML = '';
   if (!p){
     box.innerHTML = '<div class="small">No character yet.</div>';
     return;
   }
 
-  var ap = p.appearance || {};
+  const ap = p.appearance || {};
   const wrapStyle = 'display:flex;flex-direction:column;gap:.5rem';
   const title = 'font-size:.8rem;opacity:.85;letter-spacing:.02em';
   const label = 'font-size:.75rem;opacity:.75;margin:.25rem 0 .1rem';
@@ -632,7 +632,7 @@ function renderPlayerCard(){
   `;
 }// Open creation on first run
 (function ensurePlayerAtStart(){
-  var p = (GameState.state && GameState.state.player) || null;
+  const p = (GameState.state && GameState.state.player) || null;
   if (!p) {
     // Delay until DOM ready
     setTimeout(()=> openCharCreateModal(), 50);
@@ -663,7 +663,7 @@ function renderPlayerCard(){
   // Inventory & money
   document.getElementById('addItem')?.addEventListener('click', ()=>{
     const input = document.getElementById('newItem');
-    var v = input ? input.value.trim() : '';
+    const v = input ? input.value.trim() : '';
     if (!v) return;
     GameState.state.inventory.push(v);
     if (input) input.value = '';
@@ -673,17 +673,17 @@ function renderPlayerCard(){
 
   document.getElementById('applyMoney')?.addEventListener('click', ()=>{
     const el = document.getElementById('moneyDelta');
-    var n = el ? parseInt(el.value, 10) : NaN;
+    const n = el ? parseInt(el.value, 10) : NaN;
     if (!isNaN(n)) applyMoney(n);
   });
 
   // ---- Settings: JSON imports & game actions
   document.getElementById('mapFile')?.addEventListener('change', async (e) => {
-    var f = e.target && e.target.files ? e.target.files[0] : null;
+    const f = e.target && e.target.files ? e.target.files[0] : null;
     if (!f) return;
     try {
-      var text = await readFileAsText(f);
-      var json = JSON.parse(text);
+      const text = await readFileAsText(f);
+      const json = JSON.parse(text);
       localStorage.setItem(WORLD_KEY, text);
       window.GameData.WORLD = json;
       if (window.GameData.CHARACTERS) {
@@ -700,11 +700,11 @@ alert('Loaded custom map.json');
   });
 
   document.getElementById('charsFile')?.addEventListener('change', async (e) => {
-    var f = e.target && e.target.files ? e.target.files[0] : null;
+    const f = e.target && e.target.files ? e.target.files[0] : null;
     if (!f) return;
     try {
-      var text = await readFileAsText(f);
-      var json = JSON.parse(text);
+      const text = await readFileAsText(f);
+      const json = JSON.parse(text);
       localStorage.setItem(CHARS_KEY, text);
       window.GameData.CHARACTERS = json;
       if (window.GameData.WORLD) {
@@ -792,20 +792,20 @@ async function loadIncludedCharactersOverride() {
       return;
     }
 
-    var base = await baseRes.json();
-    var includes = Array.isArray(base.includes) ? base.includes : [];
-    var list = Array.isArray(base.characters) ? base.characters.slice() : [];
+    const base = await baseRes.json();
+    const includes = Array.isArray(base.includes) ? base.includes : [];
+    let list = Array.isArray(base.characters) ? base.characters.slice() : [];
 
-    var baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
+    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
     for (const raw of includes) {
       try {
-        var url = new URL(String(raw), baseUrl);
-        var r = await fetch(url.href, { cache: 'no-store' });
+        const url = new URL(String(raw), baseUrl);
+        const r = await fetch(url.href, { cache: 'no-store' });
         if (!r.ok) {
           console.warn('include fetch failed:', raw, r.status);
           continue;
         }
-        var j = await r.json();
+        const j = await r.json();
         if (Array.isArray(j?.characters)) list.push(...j.characters);
         else if (j && typeof j === 'object') list.push(j);
       } catch (e) {
@@ -820,7 +820,7 @@ async function loadIncludedCharactersOverride() {
       }
     }
 
-    var merged = { ...base };
+    const merged = { ...base };
     if (list.length) merged.characters = list;
 
     localStorage.setItem(CK, JSON.stringify(merged));
@@ -838,15 +838,15 @@ async function probeRootAndStore(){
   const WORLD_KEY_FALLBACK = 'world_json_override_v1';
   const CHARS_KEY_FALLBACK = 'characters_json_override_v1';
   const WK = (typeof WORLD_KEY !== 'undefined') ? WORLD_KEY : WORLD_KEY_FALLBACK;
-  var CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : CHARS_KEY_FALLBACK;
+  const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : CHARS_KEY_FALLBACK;
   window.BootDebug = window.BootDebug || {};
   window.BootDebug.probe = { world:{}, characters:{}, includes:[] };
 
   // Fetch WORLD.json
   const worldHref = new URL('./WORLD.json', location.href).href;
-  var world = null;
+  let world = null;
   try{
-    var r = await fetch(worldHref, { cache:'no-store' });
+    const r = await fetch(worldHref, { cache:'no-store' });
     window.BootDebug.probe.world.status = r.status;
     if (!r.ok) throw new Error('HTTP ' + r.status);
     world = await r.json();
@@ -861,23 +861,23 @@ async function probeRootAndStore(){
 
   // Fetch characters.json + resolve includes
   const charsHref = new URL('./characters.json', location.href).href;
-  var merged = null, includes = [];
+  let merged = null, includes = [];
   try{
-    var r = await fetch(charsHref, { cache:'no-store' });
+    const r = await fetch(charsHref, { cache:'no-store' });
     window.BootDebug.probe.characters.status = r.status;
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    var base = await r.json();
+    const base = await r.json();
     includes = Array.isArray(base.includes) ? base.includes : [];
-    var list = Array.isArray(base.characters) ? base.characters.slice() : [];
-    var baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
+    let list = Array.isArray(base.characters) ? base.characters.slice() : [];
+    const baseUrl = new URL(location.pathname.replace(/[^/]*$/, ''), location.origin);
     for (const raw of includes) {
       const rec = { path:String(raw), ok:false, status:0, added:0 };
       try{
-        var url = new URL(String(raw), baseUrl);
+        const url = new URL(String(raw), baseUrl);
         const rr = await fetch(url.href, { cache:'no-store' });
         rec.status = rr.status;
         if (!rr.ok) throw new Error('HTTP ' + rr.status);
-        var j = await rr.json();
+        const j = await rr.json();
         if (Array.isArray(j?.characters)) { list.push(...j.characters); rec.added = j.characters.length; }
         else if (j && typeof j === 'object') { list.push(j); rec.added = 1; }
         rec.ok = true;
@@ -908,24 +908,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function updateLoadIndicators(){
   try{
-    var WK = (typeof WORLD_KEY !== 'undefined') ? WORLD_KEY : 'world_json_override_v1';
-    var CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
+    const WK = (typeof WORLD_KEY !== 'undefined') ? WORLD_KEY : 'world_json_override_v1';
+    const CK = (typeof CHARS_KEY !== 'undefined') ? CHARS_KEY : 'characters_json_override_v1';
     let wOk = false, cOk = false;
     let wTitle = 'Not loaded', cTitle = 'Not loaded';
 
     try{
-      var wStr = localStorage.getItem(WK);
-      var w = wStr ? JSON.parse(wStr) : null;
+      const wStr = localStorage.getItem(WK);
+      const w = wStr ? JSON.parse(wStr) : null;
       if (w) {
-        var p = w.passages;
+        const p = w.passages;
         wOk = Array.isArray(p) ? p.length>0 : (p && typeof p==='object' ? Object.keys(p).length>0 : false);
         wTitle = wOk ? 'Loaded' : 'No passages';
       }
     }catch{}
 
     try{
-      var cStr = localStorage.getItem(CK);
-      var c = cStr ? JSON.parse(cStr) : null;
+      const cStr = localStorage.getItem(CK);
+      const c = cStr ? JSON.parse(cStr) : null;
       const arr = Array.isArray(c?.characters) ? c.characters : [];
       cOk = arr.length > 0;
       cTitle = cOk ? `Loaded (${arr.length})` : 'No characters';

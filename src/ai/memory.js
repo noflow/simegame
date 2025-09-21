@@ -22,7 +22,7 @@ function openDB() {
 }
 
 async function withStore(storeName, mode, fn) {
-  var db = await openDB();
+  const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(storeName, mode);
     const store = tx.objectStore(storeName);
@@ -35,10 +35,10 @@ async function withStore(storeName, mode, fn) {
 
 export async function appendChat(characterId, message) {
   const id = String(characterId);
-  var db = await openDB();
+  const db = await openDB();
   return new Promise((resolve, reject) => {
-    var tx = db.transaction(CHAT_STORE, 'readwrite');
-    var store = tx.objectStore(CHAT_STORE);
+    const tx = db.transaction(CHAT_STORE, 'readwrite');
+    const store = tx.objectStore(CHAT_STORE);
     const getReq = store.get(id);
     getReq.onsuccess = () => {
       const now = new Date().toISOString();
@@ -53,12 +53,12 @@ export async function appendChat(characterId, message) {
 }
 
 export async function loadChat(characterId, limit = 50) {
-  var id = String(characterId);
-  var db = await openDB();
+  const id = String(characterId);
+  const db = await openDB();
   return new Promise((resolve) => {
-    var tx = db.transaction(CHAT_STORE, 'readonly');
-    var store = tx.objectStore(CHAT_STORE);
-    var req = store.get(id);
+    const tx = db.transaction(CHAT_STORE, 'readonly');
+    const store = tx.objectStore(CHAT_STORE);
+    const req = store.get(id);
     req.onsuccess = () => {
       const arr = req.result?.messages || [];
       resolve(arr.slice(-limit));
@@ -68,7 +68,7 @@ export async function loadChat(characterId, limit = 50) {
 }
 
 export async function clearChat(characterId) {
-  var id = String(characterId);
+  const id = String(characterId);
   return withStore(CHAT_STORE, 'readwrite', (s) => s.delete(id));
 }
 
@@ -77,11 +77,11 @@ export async function setMeta(key, value) {
 }
 
 export async function getMeta(key, fallback = null) {
-  var db = await openDB();
+  const db = await openDB();
   return new Promise((resolve) => {
-    var tx = db.transaction(META_STORE, 'readonly');
-    var store = tx.objectStore(META_STORE);
-    var req = store.get(key);
+    const tx = db.transaction(META_STORE, 'readonly');
+    const store = tx.objectStore(META_STORE);
+    const req = store.get(key);
     req.onsuccess = () => resolve(req.result?.value ?? fallback);
     req.onerror = () => resolve(fallback);
   });

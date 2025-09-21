@@ -51,7 +51,7 @@ function applyEffects(effect={}, meters, flags, addedGoals) {
 }
 
 export async function setEventDefs(npc, defs) {
-  var defKey = `events_def:${npc.id || npc.name}`;
+  const defKey = `events_def:${npc.id || npc.name}`;
   await setMeta(defKey, defs);
 }
 

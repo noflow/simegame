@@ -61,11 +61,11 @@ export async function createMeeting(npc, meeting) {
 }
 
 export async function getMeetings(npc) {
-  var key = `meetings:${npc.id || npc.name}`;
+  const key = `meetings:${npc.id || npc.name}`;
   return await getMeta(key, []);
 }
 
 export async function clearMeetings(npc) {
-  var key = `meetings:${npc.id || npc.name}`;
+  const key = `meetings:${npc.id || npc.name}`;
   await setMeta(key, []);
 }

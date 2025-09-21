@@ -67,7 +67,7 @@ export function goTo(dest){
   state.threadVisible = [];
   if (window.GameUI?.closeChatModal) window.GameUI.closeChatModal();
   renderLocation();
-  if (window.GameLogic?.updatePresence) window.GameLogic && window.GameLogic.updatePresence && window.GameLogic.updatePresence();
+  if (window.GameLogic?.updatePresence) window.GameLogic.updatePresence();
   if (window.GameUI?.renderChat) window.GameUI.renderChat();
   if (window.GameUI?.renderSidebar) window.GameUI.renderSidebar();
   saveState();
