@@ -257,20 +257,32 @@ function sendCurrentMessage(){
     RelStore.set(id, rel).then(()=> renderChat());
 
     // AI reply
-    getRespond().then(fn=> {
-      try { const ctx = {
-        npc: npc,
-        world: (window.GameWorld || window.world || window.gameWorld || {}),
-        player: (window.Player || { id: 'MC', name: 'You' })
-      };
-      return fn(textVal, ctx);
-    }).then(reply=>{
-      reply = String(reply || '');
-      const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now() } catch(e){ window.__AI_DEBUG_ERR('sendCurrentMessage', e); throw e; }});
-      RelStore.set(id, r2).then(()=> renderChat());
-    }).catch(err=>{
-      const r3 = RelStore.getSync(id); r3.history = r3.history || []; r3.history.push({speaker: 'System', text:'[AI error: '+String(err)+']', ts:Date.now()});
-      RelStore.set(id, r3).then(()=> renderChat());
+    getRespond().then(function(fn){
+  try {
+    const ctx = {
+      npc: npc,
+      world: (window.GameWorld || window.world || window.gameWorld || {}),
+      player: (window.Player || { id: 'MC', name: 'You' })
+    };
+    return fn(textVal, ctx);
+  } catch(e){
+    try { window.__AI_DEBUG_ERR && window.__AI_DEBUG_ERR('sendCurrentMessage', e); } catch(_e) {}
+    throw e;
+  }
+}).then(function(reply){
+  reply = String(reply || '');
+  try { appendMsgToLog((npc && npc.name) ? npc.name : 'AI', reply); } catch(_e) {}
+  const r2 = RelStore.getSync(id); r2.history = r2.history || [];
+  r2.history.push({speaker: (npc && npc.name) ? npc.name : 'AI', text: reply, ts: Date.now()});
+  return RelStore.set(id, r2).then(()=> renderChat());
+}).catch(function(err){
+  const r3 = RelStore.getSync(id); r3.history = r3.history || [];
+  const msg = '[AI error: ' + String(err) + ']';
+  r3.history.push({speaker: 'System', text: msg, ts: Date.now()});
+  try { appendMsgToLog('System', msg); } catch(_e) {}
+  return RelStore.set(id, r3).then(()=> renderChat());
+});
+RelStore.set(id, r3).then(()=> renderChat());
     });
   }catch(e){ console.warn('sendCurrentMessage failed', e); }
 }
