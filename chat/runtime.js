@@ -1,4 +1,23 @@
 
+// --- AI Debug Instrumentation ---
+try {
+  window.__AI_DEBUG_ERR = function(tag, err){
+    try {
+      const msg = (err && (err.stack || err.message || String(err))) || String(err);
+      console.error("[AI DEBUG]["+tag+"]", err);
+      const pane = document.getElementById('ai_debug_pane') || (function(){
+        const el = document.createElement('pre');
+        el.id = 'ai_debug_pane';
+        el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:35vh;overflow:auto;background:#111;color:#eee;font:12px/1.4 monospace;padding:8px;margin:0;z-index:99999;';
+        document.body.appendChild(el);
+        return el;
+      })();
+      pane.textContent = "[AI ERROR]["+tag+"]\n" + msg;
+    } catch(e){ console.warn("ai debug fail", e); }
+  };
+} catch(_) {}
+
+
 import * as __StateMod from '../src/state.js';
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
 // runtime.js (clean rewrite) — v35
@@ -216,7 +235,7 @@ let __routerPromise = null;
 function getRespond(){
   if (window.respondToV2) return Promise.resolve(window.respondToV2);
   if (!__routerPromise){
-__routerPromise = import('../src/ai/router.v2.js').then(m => { try{ window.respondToV2 = m.respondToV2 || m.default; }catch(_e){} return window.respondToV2; });
+    __routerPromise = import('../src/ai/router.v2.js?v=20250918061249').then(m=> { try{ window.ChatDebug && ChatDebug.log('Router loaded', {build: m.ROUTER_BUILD || 'unknown'}); }catch(_e){}; return m.respondToV2 || m.default; });
   }
   return __routerPromise;
 }
@@ -239,7 +258,7 @@ function sendCurrentMessage(){
 
     // AI reply
     getRespond().then(fn=> {
-      const ctx = {
+      try { const ctx = {
         npc: npc,
         world: (window.GameWorld || window.world || window.gameWorld || {}),
         player: (window.Player || { id: 'MC', name: 'You' })
@@ -247,7 +266,7 @@ function sendCurrentMessage(){
       return fn(textVal, ctx);
     }).then(reply=>{
       reply = String(reply || '');
-      const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
+      const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now() } catch(e){ window.__AI_DEBUG_ERR('sendCurrentMessage', e); throw e; }});
       RelStore.set(id, r2).then(()=> renderChat());
     }).catch(err=>{
       const r3 = RelStore.getSync(id); r3.history = r3.history || []; r3.history.push({speaker: 'System', text:'[AI error: '+String(err)+']', ts:Date.now()});

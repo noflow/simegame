@@ -20,40 +20,7 @@ function normalizePlaceName(name){
     'mall':'Mall',
     'plaza':'City Center',
     'park':'Park'
-  }
-
-// --- Intent + variety helpers ---
-function recentlySaid(history, text, windowSize = 6) {
-  try {
-    const t = (text || '').toLowerCase();
-    const slice = Array.isArray(history) ? history.slice(-windowSize) : [];
-    return slice.some(h => ((h && (h.text || h.message || h.content) || '').toLowerCase()) === t);
-  } catch { return false; }
-}
-function pickBusy(history) {
-  const lines = [
-    "Can we talk later? I’ve got things to do.",
-    "I'm tied up at the moment.",
-    "Rain check? I'm in the middle of something.",
-    "Short on time—make it quick?"
-  ];
-  for (const l of lines) if (!recentlySaid(history, l, 5)) return l;
-  return lines[Math.floor(Math.random() * lines.length)];
-}
-function isCoffeeIntent(lower) {
-  return /\b(order|buy|get|grab|coffee|latte|espresso)\b.*\b(coffee|latte|espresso)\b|\border a coffee\b/i.test(lower);
-}
-function isGreeting(lower) { return /\b(hi|hello|hey|howdy|sup)\b/.test(lower); }
-function isWhere(lower) { return /\b(where (are|r) (you|u)|where\b.*\b(you|u))/.test(lower); }
-function isWhatDoing(lower) { return /\b(what (are|r) you doing|what.*doing|whatcha doing)\b/.test(lower); }
-function isThanksOrSorry(lower) { return /\b(thanks|thank you|sorry|apologies)\b/.test(lower); }
-function isSimpleQuestion(lower) { return /\?$/.test(lower) && lower.length <= 60; }
-function noRepeat(last, out) {
-  const norm = s => (s||'').toLowerCase().replace(/[^\w]+/g,' ').trim();
-  return norm(last) !== norm(out);
-}
-
-;
+  };
   const key = n.toLowerCase();
   return map[key] || (n[0].toUpperCase() + n.slice(1));
 }
@@ -168,37 +135,10 @@ const place = normPlace(world.location || 'City');
       return line + directive;
     }
 const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
-    const currentFriend = Number(
-  (relationship && relationship.friendship) ||
-  (rel && rel.friendship) ||
-  (npc && npc.friendship && npc.friendship.level) ||
-  0
-);
-\1
-    // High-priority functional + simple intents that can bypass minTalk
-    const lower = String(input || '').toLowerCase();
-    const intentAllowed =
-      isCoffeeIntent(lower) ||
-      isGreeting(lower) ||
-      isWhere(lower) ||
-      isWhatDoing(lower) ||
-      isThanksOrSorry(lower) ||
-      isSimpleQuestion(lower);
+    const currentFriend = Number((relationship && relationship.friendship) || (rel && rel.friendship) || (npc && npc.friendship && npc.friendship.level) || 0);
+const tooLow = currentFriend < minTalk;
 
-    // Coffee/order intent (do this early so it always works)
-    if (isCoffeeIntent(lower)) {
-      const here = (place || (world && (world.place || world.location)) || '');
-      const dest = /(coffee|cafe|shop)/i.test(String(here)) ? String(here) : 'Coffee Shop';
-      const line = tooLow ? "I can put the order in, but let's keep it quick." : "Sure—I'll put it in.";
-      return respond(`${line} [[MOVE:${dest}]]`, line);
-    }
-
-    // If they don't meet minTalk AND it's not an allowed/simple intent, return varied busy
-    if (tooLow && !intentAllowed) {
-      const b = pickBusy(history);
-      return respond(b, b);
-    }
-const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
+    const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
       ? `Got it — I'll use ${pr.pair}.`
       : '';
 
@@ -286,15 +226,7 @@ const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
     const fallback = sample(pack?.smallTalk) || (freedom > 0.6 ? freeformLine() : "What do you need?");
     const spice = (Math.random() < freedom ? freeformLine() : null);
     const sug = spice || maybeSuggest(place);
-    // Build final output
-    let out = sug ? `${fallback} ${sug}` : fallback;
-    // No-repeat guard against last assistant line
-    const lastNpc = Array.isArray(history)
-      ? [...history].reverse().find(h => (h && h.speaker && String(h.speaker).toLowerCase() !== 'you'))
-      : null;
-    if (lastNpc && !noRepeat(lastNpc.text, out)) {
-      out = out.replace(/\.*$/, '') + " (noted)";
-    }
+    const out = sug ? `${fallback} ${sug}` : fallback;
     return respond(out, out);
 
   } catch (e){
@@ -303,3 +235,7 @@ const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
 }
 
 export default respondToV2;
+  } catch(e) {
+    try { if (typeof window !== 'undefined' && window.__AI_DEBUG_ERR) window.__AI_DEBUG_ERR('router.v2.respondToV2', e); } catch(_){}
+    throw e;
+  }
