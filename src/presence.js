@@ -15,7 +15,7 @@ export function npcHere(npc){
   return schedule.some(rule => rule.location===loc && rule.days.includes(day) && rule.slots.includes(slot));
 }
 export function isOnDuty(npc){
-  const day = state.day; const slot = TIME_SLOTS[state.timeIndex];
+  var day = state.day; const slot = TIME_SLOTS[state.timeIndex];
   const scheduledHere = (npc.schedule||[]).some(rule => rule.location===state.location && rule.days.includes(day) && rule.slots.includes(slot));
   return scheduledHere && state.location === npc.location;
 }

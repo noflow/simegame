@@ -41,7 +41,7 @@ function pronounPack(gender){
 function normPlace(p){
   if (!p) return 'City';
   const m = String(p).trim();
-  const map = {
+  var map = {
     'city center':'City Center',
     'sisters room':"Sister's Room",
     "sister's room":"Sister's Room",
@@ -49,7 +49,7 @@ function normPlace(p){
     'apartment':'Apartments',
     'apartments':'Apartments'
   };
-  const key = m.toLowerCase();
+  var key = m.toLowerCase();
   return map[key] || m;
 }
 
@@ -111,15 +111,15 @@ const place = normPlace(world.location || 'City');
     function maybeSuggest(place){
       if (style!=='expressive') return null;
       if (Math.random() > 0.2) return null;
-      const z = zoneOf(place);
+      var z = zoneOf(place);
       if (z==='city'){
         const opts = ['grab coffee', 'walk the plaza', 'check the mall', 'hit the park'];
-        const act = opts[Math.floor(Math.random()*opts.length)];
+        var act = opts[Math.floor(Math.random()*opts.length)];
         return `We could ${act}.`;
       } else {
-        const opts = ['shift to the Living Room', 'talk in the Kitchen', 'take this to the Bedroom'];
-        const act = opts[Math.floor(Math.random()*opts.length)];
-        return act.replace('shift to','Let’s shift to');
+        var opts = ['shift to the Living Room', 'talk in the Kitchen', 'take this to the Bedroom'];
+        var act = opts[Math.floor(Math.random()*opts.length)];
+        return act.replace('shift to','Let's shift to');
       }
     }
 // Intents
@@ -129,7 +129,7 @@ const place = normPlace(world.location || 'City');
     const reMove = /\b(let'?s\s+)?(go|move|head|walk)\s+(to|into)\s+(the\s+)?([a-z][a-z\s']+)\b/;
     function movementReply(targetRaw){
       const target = normalizePlaceName(targetRaw);
-      const line = style==='expressive' ? `Alright. Let's go to the ${target}.` : `Going to the ${target}.`;
+      var line = style==='expressive' ? `Alright. Let's go to the ${target}.` : `Going to the ${target}.`;
       // Emit a directive the runtime will perform (and strip from chat)
       const directive = ` [[MOVE:${target}]]`;
       return line + directive;
@@ -146,32 +146,32 @@ const tooLow = currentFriend < minTalk;
 
     // Gate on minTalkLevel (busy tone)
     if (tooLow && !isAllowedIntent) {
-      const line = sample(pack?.busy) || sample(npc?.chat_behavior?.busyLines) || "I'm wrapped up—later?";
+      var line = sample(pack?.busy) || sample(npc?.chat_behavior?.busyLines) || "I'm wrapped up—later?";
       return respond(line, line);
     }
 
-    const busyHint = (tooLow && isAllowedIntent) ? ' (I’m a bit swamped.)' : '';
+    const busyHint = (tooLow && isAllowedIntent) ? ' (I'm a bit swamped.)' : '';
 
     // Greeting / How
     if (reHi.test(lower) || reHow.test(lower)){
       if (reHow.test(lower)){
-        const base = respond(`I'm alright—here at the ${place}. You?`, `I'm alright—here at the ${place}. How about you?`);
+        var base = respond(`I'm alright—here at the ${place}. You?`, `I'm alright—here at the ${place}. How about you?`);
         let ret = pronounHint ? `${base} ${pronounHint}` : base;
       if (busyHint) ret += busyHint;
       return ret;
       }
       const mood = sample(pack?.smallTalk) || sample(npc?.chat_behavior?.smallTalkLines) || 'Hey.';
-      const base = respond(mood, mood);
-      let ret = pronounHint ? `${base} ${pronounHint}` : base;
+      var base = respond(mood, mood);
+      var ret = pronounHint ? `${base} ${pronounHint}` : base;
       if (busyHint) ret += busyHint;
       return ret;
     }
 
     // Where are you?
     if (reWhere.test(lower)){
-      let base = respond(`We're at the ${place}.`, `We're at the ${place}.`);
+      var base = respond(`We're at the ${place}.`, `We're at the ${place}.`);
       if (busyHint) base += busyHint;
-      let ret = pronounHint ? `${base} ${pronounHint}` : base;
+      var ret = pronounHint ? `${base} ${pronounHint}` : base;
       if (busyHint) ret += busyHint;
       return ret;
     }
@@ -179,7 +179,7 @@ const tooLow = currentFriend < minTalk;
     // Who am I?
     if (reWhoAmI.test(lower)){
       const nm = (player && player.name && player.name !== 'You') ? player.name : null;
-      const base = nm ? `You're ${nm}.` : `You're you. If you want me to use a different name, tell me what to call you.`;
+      var base = nm ? `You're ${nm}.` : `You're you. If you want me to use a different name, tell me what to call you.`;
       let out = pronounHint ? `${base} I keep ${pr.subj}/${pr.obj} in mind.` : base;
       if (busyHint) out += busyHint;
       return out;
@@ -197,7 +197,7 @@ const tooLow = currentFriend < minTalk;
 
     // Movement request
     if (reMove.test(lower)){
-      const m = lower.match(reMove);
+      var m = lower.match(reMove);
       const raw = (m && (m[5]||'').trim()) || '';
       if (raw) return movementReply(raw);
     }
@@ -211,9 +211,9 @@ const tooLow = currentFriend < minTalk;
     // Topic pick from training
     const topic = matchTopic(pack, text);
     if (topic){
-      const line = sample(topic.lines);
+      var line = sample(topic.lines);
       if (line){
-        const hook = style === 'expressive' ? sample([
+        var hook = style === 'expressive' ? sample([
           "Want to dig in?",
           "Tell me your take.",
           "We can circle back if you're busy."
@@ -226,7 +226,7 @@ const tooLow = currentFriend < minTalk;
     const fallback = sample(pack?.smallTalk) || (freedom > 0.6 ? freeformLine() : "What do you need?");
     const spice = (Math.random() < freedom ? freeformLine() : null);
     const sug = spice || maybeSuggest(place);
-    const out = sug ? `${fallback} ${sug}` : fallback;
+    var out = sug ? `${fallback} ${sug}` : fallback;
     return respond(out, out);
 
   } catch (e){
@@ -239,3 +239,66 @@ export default respondToV2;
     try { if (typeof window !== 'undefined' && window.__AI_DEBUG_ERR) window.__AI_DEBUG_ERR('router.v2.respondToV2', e); } catch(_){}
     throw e;
   }
+
+// ==== Persona Runtime Polyfills (auto-injected patch) ====
+(function(global){
+  // Minimal safe logger
+  function safeLog(){ try { console.log.apply(console, arguments); } catch(_e){} }
+
+  // Append message to chat log
+  if (!global.appendMsgToLog) {
+    global.appendMsgToLog = function(who, text){
+      try{
+        var log = document.getElementById('chatLog') || document.querySelector('.chat-log') || document.body;
+        var div = document.createElement('div');
+        div.className = 'msg ' + (who || 'sys');
+        div.innerHTML = String(text || '');
+        log.appendChild(div);
+        if (log.scrollHeight) log.scrollTop = log.scrollHeight;
+      }catch(e){ safeLog('appendMsgToLog error', e); }
+    };
+  }
+
+  // Modal helper
+  if (!global.ensureModal){
+    global.ensureModal = function(){
+      var modal = document.getElementById('chatModal');
+      if (!modal){
+        modal = document.createElement('div');
+        modal.id = 'chatModal';
+        modal.className = 'modal';
+        var input = document.createElement('input');
+        input.id = 'chatInput';
+        input.type = 'text';
+        modal.appendChild(input);
+        document.body.appendChild(modal);
+      }
+      return modal;
+    };
+  }
+
+  // Close character create modal (no-op safe)
+  if (!global.closeCharCreateModal){
+    global.closeCharCreateModal = function(){
+      var m = document.getElementById('charCreateModal');
+      if (m && m.parentNode) m.parentNode.removeChild(m);
+      var ov = document.querySelector('.modal, .modal-overlay');
+      if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    };
+  }
+
+  // Expose sendCurrentMessage only once if a local version exists
+  try {
+    if (typeof sendCurrentMessage === 'function' && !global.sendCurrentMessage){
+      global.sendCurrentMessage = sendCurrentMessage;
+    }
+  } catch(_e){}
+
+  // Guard GameLogic presence
+  try {
+    if (global.GameLogic && typeof global.GameLogic.updatePresence !== 'function'){
+      global.GameLogic.updatePresence = function(){};
+    }
+  } catch(_e){}
+})(window || this);
+// ==== End Polyfills ====

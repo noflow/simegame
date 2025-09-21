@@ -26,7 +26,7 @@ export function openKnownModal(){
 }
 
 export function closeKnownModal(){
-  const overlay = document.getElementById('knownModal');
+  var overlay = document.getElementById('knownModal');
   if (!overlay) return;
   overlay.style.display = 'none';
   overlay.setAttribute('aria-hidden', 'true');
@@ -55,8 +55,8 @@ export function renderKnownList(){
   );
 
   if (filtered.length === 0){
-    list.innerHTML = `<div class="small">You haven’t met anyone yet${q ? ' (or no matches for your search)' : ''}.</div>`;
-    const det = document.getElementById('knownDetail');
+    list.innerHTML = `<div class="small">You haven't met anyone yet${q ? ' (or no matches for your search)' : ''}.</div>`;
+    var det = document.getElementById('knownDetail');
     if (det) det.innerHTML = `<div class="small">Select a character to see details.</div>`;
     return;
   }
@@ -82,7 +82,7 @@ export function renderKnownDetail(id){
   const box = document.getElementById('knownDetail');
   if (!box) return;
 
-  const chars = window.GameData?.CHARACTERS?.characters || [];
+  var chars = window.GameData?.CHARACTERS?.characters || [];
   const npc = chars.find(x => x.id === id);
   if (!npc){
     box.innerHTML = `<div class="small">Character not found. Load a valid <b>characters.json</b> and try again.</div>`;

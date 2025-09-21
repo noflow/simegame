@@ -105,8 +105,8 @@ document.getElementById('exportChars')?.addEventListener('click', () => {
 
 function patchCharacterBuilder(file){
   if (!fs.existsSync(file)) return;
-  let src = fs.readFileSync(file, 'utf8');
-  let changed = false;
+  var src = fs.readFileSync(file, 'utf8');
+  var changed = false;
 
   // 1) Remove dead fallback block after generateCharacterFromPrompt
   const deadBlock = /\n\s*if\s*\(!window\.GameAI[\s\S]*?export function addCharacterToGame/;

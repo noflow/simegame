@@ -132,15 +132,15 @@ function ensureModal(){
 }
 
 function openChatModal(){
-  const modal = ensureModal();
+  var modal = ensureModal();
   modal.removeAttribute('aria-hidden'); try{ modal.removeAttribute('inert'); }catch(_){}
-  const wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='flex';
+  var wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='flex';
   try{ modal.querySelector('#chatInput').focus(); }catch(_){}
 }
 
 function closeChatModal(){
-  const modal = document.getElementById('chatModal'); if (!modal) return;
-  const wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='none';
+  var modal = document.getElementById('chatModal'); if (!modal) return;
+  var wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='none';
   try{ if (document.activeElement) document.activeElement.blur(); }catch(_){}
   try{ document.body && document.body.focus && document.body.focus(); }catch(_){}
   try{ modal.setAttribute('inert',''); }catch(_){}
@@ -150,7 +150,7 @@ function closeChatModal(){
 // --- Render ---
 function renderChat(){
   try{
-    const modal = document.getElementById('chatModal'); if (!modal) return;
+    var modal = document.getElementById('chatModal'); if (!modal) return;
     let log = modal.querySelector('#chatLog');
     if (!log){ const b = modal.querySelector('.cosmosrp-body')||modal; log=document.createElement('div'); log.id='chatLog'; log.className='cosmosrp-log'; b.insertBefore(log, b.firstChild); }
     let id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
@@ -185,7 +185,7 @@ function __detectPlayer(){
     try{
       const raw = localStorage.getItem('game_state_v1');
       if ((!p.gender || !p.name) && raw){
-        const s = JSON.parse(raw);
+        var s = JSON.parse(raw);
         if (s && s.player){ p = Object.assign({}, p, s.player); }
       }
     }catch(_e){}
@@ -209,7 +209,7 @@ function __detectLocation(){
     const st = (window.GameState && window.GameState.state) || {};
     let loc = st.location || (window.GameWorld && window.GameWorld.location) || (window.world && window.world.location);
     if (!loc){
-      const el = document.querySelector('[data-current-location]') || document.querySelector('[data-location].active') || document.getElementById('locationDesc');
+      var el = document.querySelector('[data-current-location]') || document.querySelector('[data-location].active') || document.getElementById('locationDesc');
       if (el){
         const attr = el.getAttribute('data-current-location') || el.getAttribute('data-location') || '';
         const txt = (el.textContent || '').trim();
@@ -224,7 +224,7 @@ function __detectLocation(){
 
 function __detectTimeOfDay(){
   try{
-    const st = (window.GameState && window.GameState.state) || (typeof __StateMod !== 'undefined' && __StateMod.state) || {};
+    var st = (window.GameState && window.GameState.state) || (typeof __StateMod !== 'undefined' && __StateMod.state) || {};
     const idx = st.timeIndex || 0;
     return ['morning','afternoon','evening','night'][idx] || 'day';
   }catch(e){ return 'day'; }
@@ -243,7 +243,7 @@ function getRespond(){
 // --- Sender ---
 function sendCurrentMessage(){
   try{
-    const modal = ensureModal();
+    var modal = ensureModal();
     const input = modal.querySelector('#chatInput'); if (!input) return;
     const textVal = String(input.value||'').trim();
     if (!textVal) return;
@@ -251,9 +251,9 @@ function sendCurrentMessage(){
 
     // Resolve NPC id & rel
     let npc = window.ActiveNPC && typeof window.ActiveNPC==='object' ? window.ActiveNPC : (window.getNpcById && typeof window.currentNpcId==='string' ? getNpcById(window.currentNpcId) : null);
-    let id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (npc && npc.id) || 'lily';
+    var id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (npc && npc.id) || 'lily';
     // push user
-    let rel = RelStore.getSync(id); rel.history = rel.history || []; rel.history.push({speaker:'You', text:textVal, ts:Date.now()});
+    var rel = RelStore.getSync(id); rel.history = rel.history || []; rel.history.push({speaker:'You', text:textVal, ts:Date.now()});
     RelStore.set(id, rel).then(()=> renderChat());
 
     // AI reply
@@ -279,24 +279,24 @@ window.sendCurrentMessage = sendCurrentMessage;
 // --- Start chat ---
 function startChat(npcOrId){
   try{
-    let npc = null;
+    var npc = null;
     if (npcOrId && typeof npcOrId === 'object') npc = npcOrId;
     else if (typeof getNpcById === 'function' && npcOrId) npc = getNpcById(npcOrId);
     if (npc && npc.id) { window.currentNpcId = npc.id; window.ActiveNPC = npc; }
     if (!window.currentNpcId) window.currentNpcId = 'lily';
-    const id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId);
+    var id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId);
     // Preload & greeting on first open
     RelStore.preload(id).then(()=>{
       const r = RelStore.getSync(id);
       if (!r.history || !r.history.length){
-        const g = npc && npc.greetings ? (npc.greetings.home || npc.greetings.casual) : null;
+        var g = npc && npc.greetings ? (npc.greetings.home || npc.greetings.casual) : null;
         if (g){ r.history = r.history || []; r.history.push({speaker: npc && npc.name || 'NPC', text:g}); RelStore.set(id, r); }
       }
       renderChat();
     });
     openChatModal();
     // wire listeners (once per modal create)
-    const modal = ensureModal();
+    var modal = ensureModal();
     const form = modal.querySelector('#chatForm');
     const sendBtn = modal.querySelector('#sendBtn');
     const closeBtn = modal.querySelector('#chatClose');
@@ -306,7 +306,7 @@ function startChat(npcOrId){
     if (closeBtn && !closeBtn.__bound){ closeBtn.__bound = true; closeBtn.addEventListener('click', function(e){ e.preventDefault(); closeChatModal(); }); }
     if (clearBtn && !clearBtn.__bound){ clearBtn.__bound = true; clearBtn.addEventListener('click', function(e){ e.preventDefault(); const rid = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId); RelStore.set(rid, {id:rid, history:[], friendship:0, romance:0}).then(()=>renderChat()); }); }
     // close on backdrop click
-    const wrap = modal.querySelector('.cosmosrp');
+    var wrap = modal.querySelector('.cosmosrp');
     if (wrap && !wrap.__bound){
       wrap.__bound = true;
       wrap.addEventListener('click', function(e){ if (e.target === wrap) closeChatModal(); }, true);
@@ -320,11 +320,74 @@ window.GameUI = window.GameUI || {}; window.GameUI.startChat = startChat;
 if (typeof window.appendMsgToLog !== 'function'){
   window.appendMsgToLog = function(who, text){
     try{
-      const id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
-      const rel = RelStore.getSync(id); rel.history = rel.history || []; rel.history.push({speaker: who, text: String(text)});
+      var id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
+      var rel = RelStore.getSync(id); rel.history = rel.history || []; rel.history.push({speaker: who, text: String(text)});
       RelStore.set(id, rel).then(()=> renderChat());
     }catch(e){ console.warn('appendMsgToLog error', e); }
   };
 }
 
 try{ window.GameUI = window.GameUI || {}; window.GameUI.closeChatModal = closeChatModal; }catch(_e){}
+
+// ==== Persona Runtime Polyfills (auto-injected patch) ====
+(function(global){
+  // Minimal safe logger
+  function safeLog(){ try { console.log.apply(console, arguments); } catch(_e){} }
+
+  // Append message to chat log
+  if (!global.appendMsgToLog) {
+    global.appendMsgToLog = function(who, text){
+      try{
+        var log = document.getElementById('chatLog') || document.querySelector('.chat-log') || document.body;
+        var div = document.createElement('div');
+        div.className = 'msg ' + (who || 'sys');
+        div.innerHTML = String(text || '');
+        log.appendChild(div);
+        if (log.scrollHeight) log.scrollTop = log.scrollHeight;
+      }catch(e){ safeLog('appendMsgToLog error', e); }
+    };
+  }
+
+  // Modal helper
+  if (!global.ensureModal){
+    global.ensureModal = function(){
+      var modal = document.getElementById('chatModal');
+      if (!modal){
+        modal = document.createElement('div');
+        modal.id = 'chatModal';
+        modal.className = 'modal';
+        var input = document.createElement('input');
+        input.id = 'chatInput';
+        input.type = 'text';
+        modal.appendChild(input);
+        document.body.appendChild(modal);
+      }
+      return modal;
+    };
+  }
+
+  // Close character create modal (no-op safe)
+  if (!global.closeCharCreateModal){
+    global.closeCharCreateModal = function(){
+      var m = document.getElementById('charCreateModal');
+      if (m && m.parentNode) m.parentNode.removeChild(m);
+      var ov = document.querySelector('.modal, .modal-overlay');
+      if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    };
+  }
+
+  // Expose sendCurrentMessage only once if a local version exists
+  try {
+    if (typeof sendCurrentMessage === 'function' && !global.sendCurrentMessage){
+      global.sendCurrentMessage = sendCurrentMessage;
+    }
+  } catch(_e){}
+
+  // Guard GameLogic presence
+  try {
+    if (global.GameLogic && typeof global.GameLogic.updatePresence !== 'function'){
+      global.GameLogic.updatePresence = function(){};
+    }
+  } catch(_e){}
+})(window || this);
+// ==== End Polyfills ====
