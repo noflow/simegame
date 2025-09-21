@@ -10,7 +10,7 @@ export const packs = {
       "We should hit the city this weekend."
     ],
     busy: [
-      "Can this wait? I've got a deadline.",
+      "Can this wait? I’ve got a deadline.",
       "Ugh—study crunch. Later?"
     ],
     topics: [
@@ -42,8 +42,8 @@ export const packs = {
       "Camera in ten. Can this be concise?"
     ],
     busy: [
-      "I'm on a deadline—walk with me.",
-      "Make it quick, I'm late for a call."
+      "I’m on a deadline—walk with me.",
+      "Make it quick, I’m late for a call."
     ],
     topics: [
       { key: "work|brand|sponsor|campaign|business|startup|pitch", lines: [
@@ -51,7 +51,7 @@ export const packs = {
         "I make decisions fast and edit faster. Less noise, more signal."
       ]},
       { key: "fashion|style|outfit|wardrobe", lines: [
-        "Tailoring beats trends. Two sharp pieces, one statement—that's the tempo.",
+        "Tailoring beats trends. Two sharp pieces, one statement—that’s the tempo.",
         "I dress for the meeting I want, not the room I'm in."
       ]},
       { key: "city|event|launch|venue", lines: [

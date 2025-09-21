@@ -55,7 +55,7 @@ export function renderKnownList(){
   );
 
   if (filtered.length === 0){
-    list.innerHTML = `<div class="small">You haven't met anyone yet${q ? ' (or no matches for your search)' : ''}.</div>`;
+    list.innerHTML = `<div class="small">You haven’t met anyone yet${q ? ' (or no matches for your search)' : ''}.</div>`;
     const det = document.getElementById('knownDetail');
     if (det) det.innerHTML = `<div class="small">Select a character to see details.</div>`;
     return;

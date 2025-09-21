@@ -63,9 +63,7 @@ export async function respondToV2(userText, ctx){
     const style = (ctx && ctx.aiStyle) || 'expressive';
     const rel = (ctx && (ctx.relationship || ctx.relInfo)) || null;
 
-    
-    const relationship = rel; // alias for backward-compat
-const place = normPlace(world.location || 'City');
+    const place = normPlace(world.location || 'City');
     const pr = pronounPack(player.gender);
     const lower = text.toLowerCase();
     const pack = getPack(npc);
@@ -119,7 +117,7 @@ const place = normPlace(world.location || 'City');
       } else {
         const opts = ['shift to the Living Room', 'talk in the Kitchen', 'take this to the Bedroom'];
         const act = opts[Math.floor(Math.random()*opts.length)];
-        return act.replace('shift to','Let's shift to');
+        return act.replace('shift to','Let’s shift to');
       }
     }
 // Intents
@@ -136,7 +134,7 @@ const place = normPlace(world.location || 'City');
     }
 const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
     const currentFriend = Number((relationship && relationship.friendship) || (rel && rel.friendship) || (npc && npc.friendship && npc.friendship.level) || 0);
-const tooLow = currentFriend < minTalk;
+    const tooLow = currentFriend < minTalk;
 
     const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
       ? `Got it — I'll use ${pr.pair}.`
@@ -150,7 +148,7 @@ const tooLow = currentFriend < minTalk;
       return respond(line, line);
     }
 
-    const busyHint = (tooLow && isAllowedIntent) ? ' (I'm a bit swamped.)' : '';
+    const busyHint = (tooLow && isAllowedIntent) ? ' (I’m a bit swamped.)' : '';
 
     // Greeting / How
     if (reHi.test(lower) || reHow.test(lower)){
@@ -235,44 +233,3 @@ const tooLow = currentFriend < minTalk;
 }
 
 export default respondToV2;
-  } catch(e) {
-    try { if (typeof window !== 'undefined' && window.__AI_DEBUG_ERR) window.__AI_DEBUG_ERR('router.v2.respondToV2', e); } catch(_){}
-    throw e;
-  }
-
-;(function(global){
-  if (!global.appendMsgToLog){
-    global.appendMsgToLog = function(who, text){
-      try{
-        var log = document.getElementById('chatLog') || document.querySelector('.chat-log') || document.body;
-        var div = document.createElement('div');
-        div.className = 'msg ' + (who || 'sys');
-        div.textContent = String(text || '');
-        log.appendChild(div);
-        if (log.scrollHeight) log.scrollTop = log.scrollHeight;
-      }catch(e){ console.warn('appendMsgToLog error', e); }
-    };
-  }
-  if (!global.ensureModal){
-    global.ensureModal = function(){
-      var modal = document.getElementById('chatModal');
-      if (!modal){
-        modal = document.createElement('div');
-        modal.id = 'chatModal';
-        modal.className = 'modal';
-        var input = document.createElement('input');
-        input.id = 'chatInput';
-        input.type = 'text';
-        modal.appendChild(input);
-        document.body.appendChild(modal);
-      }
-      return modal;
-    };
-  }
-  if (!global.closeCharCreateModal){
-    global.closeCharCreateModal = function(){
-      var m = document.getElementById('charCreateModal');
-      if (m && m.parentNode) m.parentNode.removeChild(m);
-    };
-  }
-})(window || this);
