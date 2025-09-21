@@ -63,7 +63,9 @@ export async function respondToV2(userText, ctx){
     const style = (ctx && ctx.aiStyle) || 'expressive';
     const rel = (ctx && (ctx.relationship || ctx.relInfo)) || null;
 
-    const place = normPlace(world.location || 'City');
+    
+    const relationship = rel; // alias for backward-compat
+const place = normPlace(world.location || 'City');
     const pr = pronounPack(player.gender);
     const lower = text.toLowerCase();
     const pack = getPack(npc);
@@ -134,7 +136,7 @@ export async function respondToV2(userText, ctx){
     }
 const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
     const currentFriend = Number((relationship && relationship.friendship) || (rel && rel.friendship) || (npc && npc.friendship && npc.friendship.level) || 0);
-    const tooLow = currentFriend < minTalk;
+const tooLow = currentFriend < minTalk;
 
     const pronounHint = (historyCount <= 1 && pr.pair !== 'they/them')
       ? `Got it — I'll use ${pr.pair}.`
