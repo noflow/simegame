@@ -8,22 +8,10 @@ export function defaultScheduleFor(id){
   }
   return [];
 }
-function __readAppointments(){
-  try {
-    const raw = localStorage.getItem('appointments_v1');
-    return Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : [];
-  } catch(e){ return []; }
-}
 export function npcHere(npc){
   const loc = state.location;
   const day = state.day; const slot = TIME_SLOTS[state.timeIndex];
   const schedule = (npc.schedule && npc.schedule.length) ? npc.schedule : defaultScheduleFor(npc.id);
-  // Appointments override: if a meeting exists for this npc at current day/slot, treat them as at that location.
-  const appts = __readAppointments().filter(a => a.npcId === npc.id && a.day === day && a.slot === slot);
-  if (appts.length) {
-    // If appointment location matches current location, they're here.
-    return appts.some(a => a.location === loc);
-  }
   return schedule.some(rule => rule.location===loc && rule.days.includes(day) && rule.slots.includes(slot));
 }
 export function isOnDuty(npc){
