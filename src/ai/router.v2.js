@@ -2,6 +2,34 @@ export const ROUTER_BUILD = 'v3.0-training';
 import { getPack, matchTopic, sample } from './training.js';
 import { generateLocal } from './generator.local.js';
 import { generateLLM } from './bridge.js';
+import { llmChat } from './adapter.js';
+
+function buildSystemPrompt(ctx){
+  const npc = ctx?.npc || { name:'NPC' };
+  const player = ctx?.player || { name:'You' };
+  const world = ctx?.world || {};
+  const rooms = (place)=> (world.rooms && world.rooms[place]) ? world.rooms[place].join(', ') : 'n/a';
+  const places = world.places || Object.keys(world.passages||{});
+  const locList = Array.isArray(places) ? places.join(', ') : Object.keys(places||{}).join(', ');
+  const rules = [
+    'You are an NPC inside a slice-of-life game. Stay in-world.',
+    'Respect existing places and rooms; do not invent.',
+    'Use concise, conversational replies (1–3 sentences).',
+    'If travel is needed, emit an ACTION at end of reply; no teleport without MOVE.',
+    'If a meeting is planned later, emit SCHEDULE with a clear time and place.',
+    'End scenes with END_SCENE when plan is set or small talk idles.',
+    'At most 1–2 ACTIONs per reply.'
+  ].join('\n');
+  const format = [
+    'ACTION FORMAT at end of reply:',
+    '<<MOVE who="player|npcId" place="Coffee Shop" room="Tables">>',
+    '<<SCHEDULE who="npcId" place="Coffee Shop" at="today 12:00" note="coffee">>',
+    '<<END_SCENE reason="We have a plan for later.">>'
+  ].join('\n');
+  return `${rules}\nPlaces: ${locList}\n${format}`;
+}
+
+
 
 function normalizePlaceName(name){
   if (!name) return 'City';
@@ -79,7 +107,14 @@ export async function respondToV2(userText, ctx){
     const __aiFreedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.5)));
     async function hybridGenerate(){
       if (__aiMode === 'llm' || (__aiMode==='hybrid' && Math.random() < 0.5)){
-        const llm = await generateLLM(userText, { npc, world, player, relationship: (ctx && ctx.relationship)||null });
+        let llm = null;
+      try{
+        const sys = buildSystemPrompt({npc, world, player});
+        llm = await llmChat([
+          { role:'system', content: sys },
+          { role:'user', content: userText }
+        ], { max_tokens: 256, temperature: 0.7 });
+      }catch(_e){ llm = await generateLLM(userText, { npc, world, player, relationship: (ctx && ctx.relationship)||null }); }
         if (llm && typeof llm === 'string' && llm.trim()) return llm.trim();
       }
       if (__aiMode !== 'router' && Math.random() < __aiFreedom){

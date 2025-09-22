@@ -1,6 +1,99 @@
 
 import * as __StateMod from '../src/state.js';
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
+import { renderLocation } from '../src/render/map.js';
+import { updatePresence } from '../src/presence.js';
+
+// === AI Action Helpers (MOVE, SCHEDULE, END_SCENE) ===
+function __parseActions(text){
+  const acts = [];
+  const re = /<<\s*(MOVE|SCHEDULE|END_SCENE)\b([^>]*)>>/gi;
+  let m;
+  while((m = re.exec(text||''))){
+    const type = m[1].toUpperCase();
+    const kvs = {};
+    const reKV = /(\w+)\s*=\s*"([^"]*)"/g; let x;
+    while((x = reKV.exec(m[2]||''))){ kvs[x[1]] = x[2]; }
+    acts.push({ type, ...kvs });
+  }
+  return acts;
+}
+function __stripActions(text){
+  return String(text||'').replace(/<<[\s\S]*?>>/g, '').trim();
+}
+function __saveAppointments(appts){
+  try { localStorage.setItem('appointments_v1', JSON.stringify(appts)); } catch(e){}
+}
+function __loadAppointments(){
+  try { const raw = localStorage.getItem('appointments_v1'); return Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : []; } catch(e){ return []; }
+}
+function __hourToSlot(h){
+  // Map hour (0-23) to game slot names used in TIME_SLOTS
+  if (h < 6) return 'night';
+  if (h < 10) return 'early_morning';
+  if (h < 12) return 'morning';
+  if (h < 14) return 'lunch';
+  if (h < 17) return 'afternoon';
+  if (h < 21) return 'evening';
+  return 'night';
+}
+function __parseWhen(s, now){
+  s = String(s||'').toLowerCase();
+  const m = s.match(/(today|tomorrow)?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  let dayOffset = 0;
+  if (m){
+    const word = m[1]; let h = parseInt(m[2],10); const ap = m[4];
+    if (word === 'tomorrow') dayOffset = 1;
+    if (ap){ if (ap==='pm' && h<12) h+=12; if (ap==='am' && h===12) h=0; }
+    return { dayOffset, hour: h };
+  }
+  if (/tomorrow/.test(s)) return { dayOffset:1, hour:12 };
+  return { dayOffset:0, hour:12 };
+}
+async function __applyAction(act, ctx){
+  const npc = ctx.npc || { id:'lily', name:'Lily' };
+  if (act.type === 'MOVE'){
+    const who = (act.who||'player').toLowerCase();
+    const place = act.place || act.location;
+    if (who === 'player' && place){
+      try{
+        const st = __StateMod.state;
+        st.location = place;
+        if (typeof __StateMod.saveState === 'function') __StateMod.saveState();
+        if (typeof renderLocation === 'function') renderLocation();
+        if (typeof updatePresence === 'function') updatePresence();
+      }catch(e){}
+    } else {
+      // For NPC moves, set an appointment at current day/slot
+      try{
+        const st = __StateMod.state;
+        const appts = __loadAppointments();
+        const day = st.day; const slots = __StateMod.TIME_SLOTS || ['early_morning','morning','lunch','afternoon','evening','night'];
+        const slot = slots[st.timeIndex] || 'afternoon';
+        appts.push({ npcId: npc.id, day, slot, location: place });
+        __saveAppointments(appts);
+        if (typeof updatePresence === 'function') updatePresence();
+      }catch(e){}
+    }
+  }
+  if (act.type === 'SCHEDULE'){
+    const place = act.place || act.location;
+    const when = __parseWhen(act.at, new Date());
+    try{
+      const st = __StateMod.state;
+      const targetDay = st.day + (when.dayOffset||0);
+      const slot = __hourToSlot(when.hour||12);
+      const appts = __loadAppointments();
+      appts.push({ npcId: (act.who && act.who !== 'player') ? (act.who) : (npc.id||'lily'), day: targetDay, slot, location: place });
+      __saveAppointments(appts);
+      if (typeof updatePresence === 'function') updatePresence();
+    }catch(e){}
+  }
+  if (act.type === 'END_SCENE'){
+    try { if (typeof closeChatModal === 'function') closeChatModal(); } catch(_e){}
+  }
+}
+
 // runtime.js (clean rewrite) — v35
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
 
@@ -247,9 +340,14 @@ function sendCurrentMessage(){
       return fn(textVal, ctx);
     }).then(reply=>{
       reply = String(reply || '');
+      try{
+        const acts = __parseActions(reply);
+        for (const a of acts){ await __applyAction(a, {npc}); }
+        reply = __stripActions(reply);
+      }catch(_e){}
       const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
       RelStore.set(id, r2).then(()=> renderChat());
-    }).catch(err=>{
+}).catch(err=>{
       const r3 = RelStore.getSync(id); r3.history = r3.history || []; r3.history.push({speaker: 'System', text:'[AI error: '+String(err)+']', ts:Date.now()});
       RelStore.set(id, r3).then(()=> renderChat());
     });
