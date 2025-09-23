@@ -2,7 +2,6 @@ export const ROUTER_BUILD = 'v3.0-training';
 import { getPack, matchTopic, sample } from './training.js';
 import { generateLocal } from './generator.local.js';
 import { generateLLM } from './bridge.js';
-import { llmChat } from './adapter.js';
 
 function normalizePlaceName(name){
   if (!name) return 'City';
@@ -235,21 +234,3 @@ const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
 }
 
 export default respondToV2;
-
-function collectStyleExamples(npc){
-  try{
-    var tr = (npc && npc.training) ? npc.training : {};
-    var small = tr.smallTalk || (npc.chat_behavior && npc.chat_behavior.smallTalkLines) || [];
-    var busy  = tr.busy || (npc.chat_behavior && npc.chat_behavior.busyLines) || [];
-    var seen = {}; var out = [];
-    function addArr(arr){
-      if (!arr || !arr.length) return;
-      for (var i=0;i<arr.length && out.length<6;i++){
-        var s = String(arr[i]||'').trim();
-        if (s && !seen[s] && s.length <= 120){ seen[s]=1; out.push(s); }
-      }
-    }
-    addArr(small); addArr(busy);
-    return out;
-  }catch(e){ return []; }
-}

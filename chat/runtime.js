@@ -247,6 +247,12 @@ function sendCurrentMessage(){
       return fn(textVal, ctx);
     }).then(async reply => {
       reply = String(reply || '');
+// strip generic busy/swamped parentheticals the model might emit
+try{
+  reply = reply.replace(/\((?:i['’]?m|im)\s+(?:a\s+bit\s+)?swamped\.?\)/ig, '');
+  reply = reply.replace(/\((?:i['’]?m|im)\s+busy\.?\)/ig, '');
+  reply = reply.replace(/\s{2,}/g, ' ').trim();
+}catch(_e){}
       const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
       RelStore.set(id, r2).then(()=> renderChat());
     }).catch(err=>{
