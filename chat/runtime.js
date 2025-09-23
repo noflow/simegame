@@ -4,7 +4,7 @@ try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
 // === Per-NPC AI Mode Toggle (guarded, ES5-safe) =========================
 (function(){
   if (typeof window.upsertNpcAIModeToggle === 'function') return; // avoid re-declare
-  window.upsertNpcAIModeToggle = function window.upsertNpcAIModeToggle(npc){
+  window.upsertNpcAIModeToggle = function upsertNpcAIModeToggle(npc){
     try{
       var modal = document.getElementById('chatModal');
       if (!modal) {
@@ -40,7 +40,7 @@ try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
 // === Per-NPC AI Mode Toggle (guarded, ES5-safe) =========================
 (function(){
   if (typeof window.upsertNpcAIModeToggle === 'function') return; // avoid re-declare
-  window.upsertNpcAIModeToggle = function window.upsertNpcAIModeToggle(npc){
+  window.upsertNpcAIModeToggle = function upsertNpcAIModeToggle(npc){
     try{
       var modal = document.getElementById('chatModal');
       if (!modal) {
