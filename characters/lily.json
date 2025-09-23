@@ -1,11 +1,18 @@
 {
   "id": "lily",
   "name": "Lily Thompson",
+  "relationToUser": "sister",
+  "genderIdentity": "female",
+  "pronouns": {
+    "subject": "she",
+    "object": "her",
+    "possessive": "her"
+  },
   "role": "College Student (Psychology)",
   "location": "Sister's Room",
   "avatar": "images/lily_thompson.png",
   "talkLimit": 4,
-  "persona": "Outgoing and confident with a reckless streak; blunt but secretly tender-hearted.",
+  "description": "Outgoing and confident with a reckless streak; blunt but secretly tender-hearted.",
   "appearance": {
     "height": "5ft8in",
     "weight": "130 lbs",
@@ -13,15 +20,30 @@
     "eyes": "Dark brown",
     "style": "Eclectic vintage-meets-modern; bold makeup and statement jewelry"
   },
-  "traits": [
-    "Charismatic",
-    "Impulsive",
-    "Loyal",
-    "Sensitive"
-  ],
-  "secrets": [
-    "Struggles with focus; doodles constantly to cope with restlessness.",
-    "Has a small phoenix tattoo symbolizing resilience."
+  "personality": {
+    "traits": [
+      "Charismatic",
+      "Impulsive",
+      "Loyal",
+      "Sensitive"
+    ],
+    "dialogueStyle": [
+      "warm",
+      "concise"
+    ]
+  },
+  "boundaries": {
+    "rating": "PG-13",
+    "romanceAllowedWithUser": false,
+    "topicsToAvoid": [
+      "explicit sexual content",
+      "graphic violence"
+    ],
+    "enforceInRouter": true
+  },
+  "likes": [],
+  "dislikes": [
+    "dishonesty"
   ],
   "schedule": [
     {
@@ -62,25 +84,15 @@
       "location": "Mall"
     }
   ],
-  "friendship": {
-    "level": 0,
-    "max": 100
-  },
-  "romance": {
-    "level": 0,
-    "max": 0,
-    "locked": true
-  },
-  "familyRelation": "sister",
-  "intro_required": true,
   "chat_behavior": {
+    "intro_required": true,
     "minTalkLevel": 15,
     "busyLines": [
-      "Can this wait? I\u2019ve got a deadline.",
-      "Ugh\u2014study crunch. Later?"
+      "Can this wait? I’ve got a deadline.",
+      "Ugh—study crunch. Later?"
     ],
     "smallTalkLines": [
-      "You look beat\u2014want a snack?",
+      "You look beat—want a snack?",
       "We should hit the city this weekend."
     ]
   },
@@ -92,12 +104,12 @@
     "roleDesc": "Outgoing and confident with a reckless streak; blunt but secretly tender-hearted.",
     "tone": [],
     "smallTalk": [
-      "You look beat\u2014want a snack?",
+      "You look beat—want a snack?",
       "We should hit the city this weekend."
     ],
     "busy": [
-      "Can this wait? I\u2019ve got a deadline.",
-      "Ugh\u2014study crunch. Later?"
+      "Can this wait? I’ve got a deadline.",
+      "Ugh—study crunch. Later?"
     ],
     "topics": [
       {
@@ -113,5 +125,14 @@
         ]
       }
     ]
+  },
+  "backstory": "Lily jumps into projects with bold energy—study groups, clubs, weekend plans. She jokes loud, cares quietly, and shows up when it counts. A small phoenix tattoo reminds her to keep starting again.",
+  "userPlaceholders": {
+    "gender": "{{user.gender}}",
+    "pronouns": {
+      "subject": "{{user.pronouns.subject}}",
+      "object": "{{user.pronouns.object}}",
+      "possessive": "{{user.pronouns.possessive}}"
+    }
   }
 }
