@@ -1,21 +1,25 @@
 
 import * as __StateMod from '../src/state.js';
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
-// === Per-NPC AI Mode Toggle (guarded) =================================
+// === Per-NPC AI Mode Toggle (guarded, ES5-safe) =========================
 (function(){
   if (typeof window.upsertNpcAIModeToggle === 'function') return; // avoid re-declare
   window.upsertNpcAIModeToggle = function window.upsertNpcAIModeToggle(npc){
     try{
-      const modal = document.getElementById('chatModal') || (typeof ensureModal==='function' ? ensureModal() : document.body);
+      var modal = document.getElementById('chatModal');
+      if (!modal) {
+        if (typeof window.ensureModal === 'function') { modal = window.ensureModal(); }
+        if (!modal) modal = document.body;
+      }
       if (!modal) return;
-      let bar = modal.querySelector('.chat-toolbar');
+      var bar = modal.querySelector('.chat-toolbar');
       if (!bar){
         bar = document.createElement('div');
         bar.className = 'chat-toolbar';
         bar.style.cssText = 'display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;';
         modal.insertBefore(bar, modal.firstChild);
       }
-      let wrap = bar.querySelector('#npc-aimode-wrap');
+      var wrap = bar.querySelector('#npc-aimode-wrap');
       if (!wrap){
         wrap = document.createElement('div');
         wrap.id = 'npc-aimode-wrap';
@@ -23,31 +27,35 @@ try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
         wrap.innerHTML = '<span>AI:</span>\n<select id="npc-aimode-select" style="padding:.15rem .4rem;"><option value="llm">LLM</option><option value="hybrid">Hybrid</option><option value="local">Local</option></select>';
         bar.appendChild(wrap);
       }
-      const sel = wrap.querySelector('#npc-aimode-select');
-      const key = `ai_mode_npc:${(npc && (npc.id||npc.name)) || 'npc'}`;
-      const cur = localStorage.getItem(key) || localStorage.getItem('ai_mode') || 'llm';
+      var sel = wrap.querySelector('#npc-aimode-select');
+      var key = 'ai_mode_npc:' + ((npc && (npc.id || npc.name)) || 'npc');
+      var cur = localStorage.getItem(key) || localStorage.getItem('ai_mode') || 'llm';
       if (sel.value !== cur) sel.value = cur;
-      sel.onchange = () => { try{ localStorage.setItem(key, sel.value); }catch(e){} };
-    }catch(e){ console.warn('aimode toggle error', e); }
+      sel.onchange = function(){ try{ localStorage.setItem(key, sel.value); }catch(e){} };
+    }catch(e){ try{ console.warn('aimode toggle error', e); }catch(_){} }
   };
 })();
 // runtime.js (clean rewrite) — v35
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
-// === Per-NPC AI Mode Toggle (guarded) =================================
+// === Per-NPC AI Mode Toggle (guarded, ES5-safe) =========================
 (function(){
   if (typeof window.upsertNpcAIModeToggle === 'function') return; // avoid re-declare
   window.upsertNpcAIModeToggle = function window.upsertNpcAIModeToggle(npc){
     try{
-      const modal = document.getElementById('chatModal') || (typeof ensureModal==='function' ? ensureModal() : document.body);
+      var modal = document.getElementById('chatModal');
+      if (!modal) {
+        if (typeof window.ensureModal === 'function') { modal = window.ensureModal(); }
+        if (!modal) modal = document.body;
+      }
       if (!modal) return;
-      let bar = modal.querySelector('.chat-toolbar');
+      var bar = modal.querySelector('.chat-toolbar');
       if (!bar){
         bar = document.createElement('div');
         bar.className = 'chat-toolbar';
         bar.style.cssText = 'display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;';
         modal.insertBefore(bar, modal.firstChild);
       }
-      let wrap = bar.querySelector('#npc-aimode-wrap');
+      var wrap = bar.querySelector('#npc-aimode-wrap');
       if (!wrap){
         wrap = document.createElement('div');
         wrap.id = 'npc-aimode-wrap';
@@ -55,12 +63,12 @@ try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
         wrap.innerHTML = '<span>AI:</span>\n<select id="npc-aimode-select" style="padding:.15rem .4rem;"><option value="llm">LLM</option><option value="hybrid">Hybrid</option><option value="local">Local</option></select>';
         bar.appendChild(wrap);
       }
-      const sel = wrap.querySelector('#npc-aimode-select');
-      const key = `ai_mode_npc:${(npc && (npc.id||npc.name)) || 'npc'}`;
-      const cur = localStorage.getItem(key) || localStorage.getItem('ai_mode') || 'llm';
+      var sel = wrap.querySelector('#npc-aimode-select');
+      var key = 'ai_mode_npc:' + ((npc && (npc.id || npc.name)) || 'npc');
+      var cur = localStorage.getItem(key) || localStorage.getItem('ai_mode') || 'llm';
       if (sel.value !== cur) sel.value = cur;
-      sel.onchange = () => { try{ localStorage.setItem(key, sel.value); }catch(e){} };
-    }catch(e){ console.warn('aimode toggle error', e); }
+      sel.onchange = function(){ try{ localStorage.setItem(key, sel.value); }catch(e){} };
+    }catch(e){ try{ console.warn('aimode toggle error', e); }catch(_){} }
   };
 })();
 
@@ -300,6 +308,7 @@ function sendCurrentMessage(){
     // AI reply
     getRespond().then(fn=> {
       const ctx = {
+    npcAIMode: (function(){ try{ var key = 'ai_mode_npc:' + ((npc && (npc.id||npc.name)) || 'npc'); return localStorage.getItem(key) || localStorage.getItem('ai_mode') || 'llm'; }catch(_e){ return 'llm'; }})(),
         npc: npc,
         world: (window.GameWorld || window.world || window.gameWorld || {}),
         player: (window.Player || { id: 'MC', name: 'You' })
