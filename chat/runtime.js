@@ -240,6 +240,8 @@ function sendCurrentMessage(){
     // AI reply
     getRespond().then(fn=> {
       const ctx = {
+    gameState: (typeof __StateMod!=='undefined' && __StateMod.state) ? __StateMod.state : null,
+    recentHistory: (function(){ try{ const id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || 'lily'; const r = RelStore.getSync(id); const h = (r && r.history) ? r.history.slice(-8) : []; return h.map(x => ({ role: x.speaker==='You'?'user':'assistant', content: String(x.text||'') })); }catch(_e){ return []; }})(),
         npc: npc,
         world: (window.GameWorld || window.world || window.gameWorld || {}),
         player: (window.Player || { id: 'MC', name: 'You' })

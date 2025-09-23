@@ -2,6 +2,7 @@ export const ROUTER_BUILD = 'v3.0-training';
 import { getPack, matchTopic, sample } from './training.js';
 import { generateLocal } from './generator.local.js';
 import { generateLLM } from './bridge.js';
+import { llmChat } from './adapter.js';
 
 function normalizePlaceName(name){
   if (!name) return 'City';
@@ -80,8 +81,14 @@ export async function respondToV2(userText, ctx){
     const __aiFreedom = Math.max(0, Math.min(1, Number(localStorage.getItem('ai_freedom') || 0.5)));
     async function hybridGenerate(){
       if (__aiMode === 'llm' || (__aiMode==='hybrid' && Math.random() < 0.5)){
-        const llm = await generateLLM(userText, { npc, world, player, relationship: (ctx && ctx.relationship)||null });
+        let llm = null;
+      try{
+        const sys = buildSystemPrompt({ npc, world, player, gameState: ctx && ctx.gameState });
+        const hist = Array.isArray(ctx?.recentHistory) ? ctx.recentHistory.slice(-8) : [];
+        const messages = [{ role:'system', content: sys }, ...hist, { role:'user', content: userText }];
+        llm = await llmChat(messages, { max_tokens: 220, temperature: 0.75 });
         if (llm && typeof llm === 'string' && llm.trim()) return llm.trim();
+      }catch(_e){}
       }
       if (__aiMode !== 'router' && Math.random() < __aiFreedom){
         try { return generateLocal(userText, ctx, pack); } catch(_e){}
@@ -234,3 +241,62 @@ const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
 }
 
 export default respondToV2;
+function normalizeSlot(state){
+  try{
+    const slots = (window.TIME_SLOTS || (typeof __StateMod!=='undefined' && __StateMod.TIME_SLOTS) || ['early_morning','morning','lunch','afternoon','evening','night']);
+    const idx = (state && typeof state.timeIndex==='number') ? state.timeIndex : 2;
+    return slots[idx] || 'afternoon';
+  }catch(_e){ return 'afternoon'; }
+}
+function npcOnShift(npc, state){
+  try{
+    if (!npc || !npc.schedule || !Array.isArray(npc.schedule)) return false;
+    const day = state?.day || 1;
+    const slot = normalizeSlot(state);
+    return npc.schedule.some(r => (r.days||[]).includes(day) && (r.slots||[]).includes(slot));
+  }catch(_e){ return false; }
+}
+function currentPlace(ctx){
+  const st = ctx?.gameState || null;
+  return (st && st.location) ? String(st.location) : (ctx?.npc?.location || 'City Center');
+}
+function buildSystemPrompt(ctx){
+  const npc = ctx?.npc || { id:'npc', name:'NPC' };
+  const player = ctx?.player || { name:'You' };
+  const world = ctx?.world || {};
+  const state = ctx?.gameState || null;
+  const place = currentPlace(ctx);
+  const slot = normalizeSlot(state);
+  const onShift = npcOnShift(npc, state);
+  const role = npc.role || (place==='Coffee Shop' ? 'Barista' : '');
+
+  const rules = [
+    'You are an in-world NPC. Stay strictly in the game world.',
+    'Write 1–3 concise sentences. Be natural and conversational.',
+    'Respect existing places/rooms; do not invent new ones.',
+    'If moving or meeting, add an ACTION at the very end.',
+    'If busy/on shift, speak like someone working—short, courteous, focused.',
+    'Steer away from endless small talk; propose a plan or wrap up when appropriate.',
+    'Use at most one ACTION per reply.'
+  ];
+
+  const work = onShift
+    ? `You are currently ON SHIFT as ${role||'staff'} at ${place} during ${slot}. Prioritize brief, helpful replies while working—e.g., taking orders, quick updates, or suggesting a later time.`
+    : `You are currently OFF shift at ${place} during ${slot}. You can chat a bit more freely.`;
+
+  const actionFmt = [
+    'ACTION format (append at end when needed):',
+    '<<MOVE who="player|{npcId}" place="Coffee Shop" room="Counter">>',
+    '<<SCHEDULE who="{npcId}" place="Coffee Shop" at="today 12:00" note="quick chat">>',
+    '<<END_SCENE reason="We have a plan for later.">>'
+  ].join('\n').replace(/{npcId}/g, npc.id || 'npc');
+
+  return [
+    rules.join('\n'),
+    '',
+    work,
+    '',
+    'World constraints: only use known places and rooms you are told.',
+    actionFmt
+  ].join('\n');
+}
