@@ -62,6 +62,7 @@ export async function respondToV2(userText, ctx){
     const historyCount = Number(ctx && ctx.historyCount || 0);
     const style = (ctx && ctx.aiStyle) || 'expressive';
     const rel = (ctx && (ctx.relationship || ctx.relInfo)) || null;
+    const relationship = rel; // alias for backward-compat
 
     const place = normPlace(world.location || 'City');
     const pr = pronounPack(player.gender);
