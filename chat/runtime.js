@@ -1,5 +1,6 @@
 
 import * as __StateMod from '../src/state.js';
+import * as RouterV2 from '../src/ai/router.v2.js';
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
 // runtime.js (clean rewrite) — v35
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
@@ -213,10 +214,7 @@ function __detectTimeOfDay(){
 // --- Router loader ---
 
 let __routerPromise = null;
-function getRespond(){
-  if (window.respondToV2) return Promise.resolve(window.respondToV2);
-  if (!__routerPromise){
-    __routerPromise = import('../src/ai/router.v2.js?v=20250918061249').then(m=> { try{ window.ChatDebug && ChatDebug.log('Router loaded', {build: m.ROUTER_BUILD || 'unknown'}); }catch(_e){}; return m.respondToV2 || m.default; });
+function getRespond(){ return Promise.resolve((text, ctx) => RouterV2.respondToV2(text, ctx)); }); }catch(_e){}; return m.respondToV2 || m.default; });
   }
   return __routerPromise;
 }

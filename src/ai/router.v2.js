@@ -1,3 +1,4 @@
+function getNpcAIMode(ctx){ return 'llm'; }
 export const ROUTER_BUILD = 'v3.0-training';
 import { getPack, matchTopic, sample } from './training.js';
 import { generateLocal } from './generator.local.js';
