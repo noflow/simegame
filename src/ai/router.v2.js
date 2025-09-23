@@ -2,7 +2,6 @@ export const ROUTER_BUILD = 'v3.0-training';
 import { getPack, matchTopic, sample } from './training.js';
 import { generateLocal } from './generator.local.js';
 import { generateLLM } from './bridge.js';
-import { llmChat } from './adapter.js';
 
 function normalizePlaceName(name){
   if (!name) return 'City';
@@ -235,21 +234,3 @@ const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
 }
 
 export default respondToV2;
-function getNpcAIMode(ctx){
-  try{
-    const npc = ctx?.npc;
-    const key = `ai_mode_npc:${(npc && (npc.id||npc.name)) || 'npc'}`;
-    return localStorage.getItem(key) || localStorage.getItem('ai_mode') || ctx?.npcAIMode || 'llm';
-  }catch(_e){ return 'llm'; }
-}
-function templateReply(userText, ctx){
-  const npc = ctx?.npc || {};
-  const behavior = npc.chat_behavior || {};
-  const small = (behavior.smallTalkLines||[])[0] || 'How can I help?';
-  const t = String(userText||'').toLowerCase();
-  if (/where|location|you at/.test(t)){
-    const here = (ctx?.gameState && ctx.gameState.location) ? ctx.gameState.location : (npc.location||'City Center');
-    return `I’m at ${here}.`;
-  }
-  return small;
-}
