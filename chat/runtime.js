@@ -212,12 +212,14 @@ function __detectTimeOfDay(){
   }catch(e){ return 'day'; }
 }
 // --- Router loader ---
-
 let __routerPromise = null;
-function getRespond(){ return Promise.resolve((text, ctx) => RouterV2.respondToV2(text, ctx)); }); }catch(_e){}; return m.respondToV2 || m.default; });
-  }
-  return __routerPromise;
+function getRespond(){
+  // Always call the LLM router v2 directly
+  return Promise.resolve(function(text, ctx){
+    return RouterV2.respondToV2(text, ctx);
+  });
 }
+
 
 // --- Sender ---
 function sendCurrentMessage(){
