@@ -2,8 +2,72 @@
 import * as __StateMod from '../src/state.js';
 import * as RouterV2 from '../src/ai/router.v2.js';
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
+// === Per-NPC AI Mode Toggle (guarded, ES5-safe) =========================
+(function(){
+  if (typeof window.upsertNpcAIModeToggle === 'function') return; // avoid re-declare
+  window.upsertNpcAIModeToggle = function upsertNpcAIModeToggle(npc){
+    try{
+      var modal = document.getElementById('chatModal');
+      if (!modal && typeof window.ensureModal === 'function') modal = window.ensureModal();
+      if (!modal) modal = document.body;
+      if (!modal) return;
+      var bar = modal.querySelector('.chat-toolbar');
+      if (!bar){
+        bar = document.createElement('div');
+        bar.className = 'chat-toolbar';
+        bar.style.cssText = 'display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;';
+        modal.insertBefore(bar, modal.firstChild);
+      }
+      var wrap = bar.querySelector('#npc-aimode-wrap');
+      if (!wrap){
+        wrap = document.createElement('div');
+        wrap.id = 'npc-aimode-wrap';
+        wrap.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:.25rem;font-size:12px;';
+        wrap.innerHTML = '<span>AI:</span>\n<select id="npc-aimode-select" style="padding:.15rem .4rem;"><option value="llm">LLM</option><option value="hybrid">Hybrid</option><option value="local">Local</option></select>';
+        bar.appendChild(wrap);
+      }
+      var sel = wrap.querySelector('#npc-aimode-select');
+      var key = 'ai_mode_npc:' + ((npc && (npc.id || npc.name)) || 'npc');
+      var cur = localStorage.getItem(key) || localStorage.getItem('ai_mode') || 'llm';
+      if (sel.value !== cur) sel.value = cur;
+      sel.onchange = function(){ try{ localStorage.setItem(key, sel.value); }catch(e){} };
+    }catch(e){ try{ console.warn('aimode toggle error', e); }catch(_){} }
+  };
+})();
 // runtime.js (clean rewrite) — v35
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
+// === Per-NPC AI Mode Toggle (guarded, ES5-safe) =========================
+(function(){
+  if (typeof window.upsertNpcAIModeToggle === 'function') return; // avoid re-declare
+  window.upsertNpcAIModeToggle = function upsertNpcAIModeToggle(npc){
+    try{
+      var modal = document.getElementById('chatModal');
+      if (!modal && typeof window.ensureModal === 'function') modal = window.ensureModal();
+      if (!modal) modal = document.body;
+      if (!modal) return;
+      var bar = modal.querySelector('.chat-toolbar');
+      if (!bar){
+        bar = document.createElement('div');
+        bar.className = 'chat-toolbar';
+        bar.style.cssText = 'display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;';
+        modal.insertBefore(bar, modal.firstChild);
+      }
+      var wrap = bar.querySelector('#npc-aimode-wrap');
+      if (!wrap){
+        wrap = document.createElement('div');
+        wrap.id = 'npc-aimode-wrap';
+        wrap.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:.25rem;font-size:12px;';
+        wrap.innerHTML = '<span>AI:</span>\n<select id="npc-aimode-select" style="padding:.15rem .4rem;"><option value="llm">LLM</option><option value="hybrid">Hybrid</option><option value="local">Local</option></select>';
+        bar.appendChild(wrap);
+      }
+      var sel = wrap.querySelector('#npc-aimode-select');
+      var key = 'ai_mode_npc:' + ((npc && (npc.id || npc.name)) || 'npc');
+      var cur = localStorage.getItem(key) || localStorage.getItem('ai_mode') || 'llm';
+      if (sel.value !== cur) sel.value = cur;
+      sel.onchange = function(){ try{ localStorage.setItem(key, sel.value); }catch(e){} };
+    }catch(e){ try{ console.warn('aimode toggle error', e); }catch(_){} }
+  };
+})();
 
 // Minimal, self-contained chat runtime with IndexedDB history, modal UI, and router.v2 integration.
 
@@ -214,7 +278,11 @@ function __detectTimeOfDay(){
 // --- Router loader ---
 
 let __routerPromise = null;
-function getRespond(){ return Promise.resolve((text, ctx) => RouterV2.respondToV2(text, ctx)); }); }catch(_e){}; return m.respondToV2 || m.default; });
+function getRespond(){
+  return Promise.resolve(function(text, ctx){
+    return RouterV2.respondToV2(text, ctx);
+  });
+}); }catch(_e){}; return m.respondToV2 || m.default; });
   }
   return __routerPromise;
 }
@@ -249,7 +317,7 @@ function sendCurrentMessage(){
 try{
   reply = reply.replace(/\((?:i['’]?m|im)\s+(?:a\s+bit\s+)?swamped\.?\)/ig, '');
   reply = reply.replace(/\((?:i['’]?m|im)\s+busy\.?\)/ig, '');
-  reply = reply.replace(/\s{2,}/g, ' ').trim();
+  reply = reply.replace(/\s{2}/g, ' ').trim();
 }catch(_e){}
       const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
       RelStore.set(id, r2).then(()=> renderChat());
