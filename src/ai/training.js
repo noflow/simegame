@@ -75,8 +75,8 @@ export function getPack(npc){
     name: (npc.name || 'NPC'),
     roleDesc: t.roleDesc || npc.role || '',
     tone: Array.isArray(t.tone) ? t.tone.slice(0,3) : [],
-    smallTalk: Array.isArray(t.smallTalk) ? t.smallTalk.slice(0,6) : (Array.isArray(npc?.chat_behavior?.smallTalkLines) ? npc.chat_behavior.smallTalkLines.slice(0,6) : []),
-    busy: Array.isArray(t.busy) ? t.busy.slice(0,6) : (Array.isArray(npc?.chat_behavior?.busyLines) ? npc.chat_behavior.busyLines.slice(0,6) : []),
+    smallTalk: Array.isArray(t.smallTalk) ? t.smallTalk.slice(0,6) : (Array.isArray(npc?.chat_behavior?.smallTalkLines) ? [].slice(0,6) : []),
+    busy: Array.isArray(t.busy) ? t.busy.slice(0,6) : (Array.isArray(npc?.chat_behavior?.busyLines) ? [].slice(0,6) : []),
     topics: Array.isArray(t.topics) ? t.topics.map(x=>({ key:String(x.key||'').trim(), lines:Array.isArray(x.lines)?x.lines.slice(0,8):[] })) : []
   } : null;
 

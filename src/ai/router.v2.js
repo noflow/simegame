@@ -235,3 +235,13 @@ const minTalk = Number(npc?.chat_behavior?.minTalkLevel || 0);
 }
 
 export default respondToV2;
+
+function lastAssistant(ctx){
+  try{
+    var hist = Array.isArray(ctx && ctx.recentHistory) ? ctx.recentHistory : [];
+    for (var i = hist.length - 1; i >= 0; i--){
+      if (hist[i] && hist[i].role === 'assistant') return String(hist[i].content || '');
+    }
+  }catch(e){}
+  return '';
+}
