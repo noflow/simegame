@@ -246,3 +246,25 @@ function lastAssistant(ctx){
   }catch(e){}
   return '';
 }
+
+
+function __desiredMinChars(){
+  try{
+    var v = parseInt(localStorage.getItem('llm_min_chars')||'',10);
+    if (!isNaN(v)) return Math.max(40, Math.min(800, v));
+  }catch(_e){}
+  return 120; // default minimum characters for a reply
+}
+
+async function __genLLM(messages){
+  let llm = await llmChat(messages, { max_tokens: 640, temperature: 1.2, top_p: 0.95, presence_penalty: 0.8, frequency_penalty: 0.5 });
+  try{
+    var minChars = __desiredMinChars();
+    var tooShort = !llm || (typeof llm === 'string' && llm.replace(/\s+/g,' ').trim().length < minChars);
+    if (tooShort){
+      var steerLen = { role:'system', content: 'Expand to roughly ' + Math.max(minChars, 120) + ' to 300 characters. Add a concrete detail from the current scene and end with a gentle question.' };
+      llm = await llmChat(messages.concat([steerLen]), { max_tokens: 800, temperature: 1.25, top_p: 0.96, presence_penalty: 0.9, frequency_penalty: 0.6 });
+    }
+  }catch(_e){}
+  return llm;
+}
