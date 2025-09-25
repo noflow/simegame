@@ -257,8 +257,24 @@ function __desiredMinChars(){
 }
 
 async function __genLLM(messages){
-  let llm = await llmChat(messages, { max_tokens: 640, temperature: 1.2, top_p: 0.95, presence_penalty: 0.8, frequency_penalty: 0.5 });
-  try{
+  $1
+      // npc-banned reroll
+      try{
+        var bannedSet = __collectBannedFromNPC(npc);
+        function containsBanned(s){
+          if (!s) return false;
+          var low = String(s).toLowerCase();
+          for (var i=0;i<bannedSet.length;i++){
+            var b = String(bannedSet[i]||'').toLowerCase();
+            if (b && low.indexOf(b) !== -1) return true;
+          }
+          return false;
+        }
+        if (containsBanned(llm)){
+          var steer = { role:'system', content:'Your last draft echoed stock lines. Rewrite in fresh wording tied to the current location/time and task. Avoid any template phrasing.' };
+          llm = await llmChat(messages.concat([steer]), { max_tokens: 720, temperature: 1.25, top_p: 0.96, presence_penalty: 0.9, frequency_penalty: 0.6 });
+        }
+      }catch(_e){}try{
     var minChars = __desiredMinChars();
     var tooShort = !llm || (typeof llm === 'string' && llm.replace(/\s+/g,' ').trim().length < minChars);
     if (tooShort){
@@ -267,4 +283,23 @@ async function __genLLM(messages){
     }
   }catch(_e){}
   return llm;
+}
+
+
+function __collectBannedFromNPC(npc){
+  try{
+    var banned = [];
+    var tr = npc && npc.training || {};
+    var cb = npc && npc.chat_behavior || {};
+    function add(arr){
+      if (!arr) return;
+      for (var i=0;i<arr.length;i++){ var s = String(arr[i]||'').trim(); if(s){ banned.push(s); } }
+    }
+    add(tr.smallTalk); add(tr.busy);
+    add(cb.smallTalkLines); add(cb.busyLines);
+    // De-dup and keep short phrases too
+    var seen={}, out=[];
+    for (var j=0;j<banned.length;j++){ var t=banned[j]; if(!seen[t]){ seen[t]=1; out.push(t); } }
+    return out;
+  }catch(e){ return []; }
 }

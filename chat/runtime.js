@@ -213,11 +213,11 @@ function __detectTimeOfDay(){
 }
 // --- Router loader ---
 let __routerPromise = null;
-function getRespond(){
-  return Promise.resolve(function(text, ctx){
-    return RouterV2.respondToV2(text, ctx);
-  });
+function getRespond(){ return Promise.resolve(function(text, ctx){ return RouterV2.respondToV2(text, ctx); }); });
 }
+);
+}
+
 
 // --- Sender ---
 function sendCurrentMessage(){
@@ -242,7 +242,8 @@ function sendCurrentMessage(){
         world: (window.GameWorld || window.world || window.gameWorld || {}),
         player: (window.Player || { id: 'MC', name: 'You' })
       };
-      return fn(textVal, ctx);
+      if (localStorage.getItem('debug_ai')==='1'){ try{ console.log('[AI] using RouterV2.respondToV2'); }catch(_e){} }
+  return fn(textVal, ctx);
     }).then(async reply => {
       reply = String(reply || '');
 // blocked contains filter (client-side)
@@ -252,7 +253,7 @@ try{
     "i’m on a deadline—walk with me",
     "i'm on a deadline—walk with me",
     "you look beat—want a snack",
-    "ugh—study crunch. later"
+    "ugh—study crunch. later", "can this wait? i’ve got a deadline", "can this wait? i've got a deadline", "you again—interesting"
   ];
   const low = reply.toLowerCase();
   for (let i=0;i<blocked.length;i++){
@@ -343,3 +344,17 @@ if (typeof window.appendMsgToLog !== 'function'){
 }
 
 try{ window.GameUI = window.GameUI || {}; window.GameUI.closeChatModal = closeChatModal; }catch(_e){}
+
+// Dev overlay to confirm LLM path (enable with localStorage.debug_ai='1')
+try{
+  if (localStorage.getItem('debug_ai')==='1'){
+    var tag = document.getElementById('ai-debug-tag');
+    if (!tag){
+      tag = document.createElement('div');
+      tag.id = 'ai-debug-tag';
+      tag.textContent = 'LLM LIVE';
+      tag.style.cssText = 'position:fixed;right:8px;bottom:8px;background:#0a0;color:#fff;padding:4px 6px;border-radius:4px;font:12px/1 monospace;z-index:99999;opacity:.85';
+      document.body.appendChild(tag);
+    }
+  }
+}catch(_e){}
