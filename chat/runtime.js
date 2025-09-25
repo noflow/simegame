@@ -214,10 +214,10 @@ function __detectTimeOfDay(){
 // --- Router loader ---
 let __routerPromise = null;
 function getRespond(){
-  // Always call the LLM router v2 directly
   return Promise.resolve(function(text, ctx){
     return RouterV2.respondToV2(text, ctx);
   });
+});
 }
 
 
