@@ -211,13 +211,14 @@ function __detectTimeOfDay(){
     return ['morning','afternoon','evening','night'][idx] || 'day';
   }catch(e){ return 'day'; }
 }
-
 // --- Router loader ---
 let __routerPromise = null;
 function getRespond(){
   return Promise.resolve(function(text, ctx){
     return RouterV2.respondToV2(text, ctx);
   });
+}
+);
 }
 
 
@@ -247,6 +248,24 @@ function sendCurrentMessage(){
       return fn(textVal, ctx);
     }).then(async reply => {
       reply = String(reply || '');
+// blocked contains filter (client-side)
+try{
+  const blocked = [
+    "you have good timing",
+    "i’m on a deadline—walk with me",
+    "i'm on a deadline—walk with me",
+    "you look beat—want a snack",
+    "ugh—study crunch. later"
+  ];
+  const low = reply.toLowerCase();
+  for (let i=0;i<blocked.length;i++){
+    if (low.indexOf(blocked[i]) !== -1){
+      reply = "Alright—fill me in. What’s up?";
+      break;
+    }
+  }
+}catch(_e){} // blocked contains filter
+
 // strip canned template replies
 try{
   var _canned = [

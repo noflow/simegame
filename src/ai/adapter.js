@@ -9,7 +9,19 @@ export async function llmChat(messages, opts = {}) {
   const body = {
     model: opts.model || DEFAULT_MODEL,
     messages,
-    temperature: opts.temperature ?? 0.7,
+    (function(){
+      let temp = opts.temperature;
+      if (temp === undefined || temp === null){
+        const tLS = parseFloat(localStorage.getItem('llm_temperature'));
+        temp = isNaN(tLS) ? 1.2 : tLS;
+      }
+      if (temp < 0) temp = 0;
+      if (temp > 2) temp = 2;
+      return temp;
+    })()?? 0.7,
+    top_p: (function(){ const v=parseFloat(localStorage.getItem('llm_top_p')); return isNaN(v)?0.95:Math.max(0,Math.min(1,v)); })(),
+    presence_penalty: (function(){ const v=parseFloat(localStorage.getItem('llm_presence_penalty')); return isNaN(v)?0.8:v; })(),
+    frequency_penalty: (function(){ const v=parseFloat(localStorage.getItem('llm_frequency_penalty')); return isNaN(v)?0.5:v; })(),
     max_tokens: opts.max_tokens ?? 512
   };
   const res = await fetch(url, {
