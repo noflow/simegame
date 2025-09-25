@@ -217,7 +217,8 @@ function getRespond(){
   return Promise.resolve(function(text, ctx){
     return RouterV2.respondToV2(text, ctx);
   });
-});
+}
+);
 }
 
 

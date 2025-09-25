@@ -9,16 +9,7 @@ export async function llmChat(messages, opts = {}) {
   const body = {
     model: opts.model || DEFAULT_MODEL,
     messages,
-    (function(){
-      let temp = opts.temperature;
-      if (temp === undefined || temp === null){
-        const tFromLS = parseFloat(localStorage.getItem('llm_temperature'));
-        temp = isNaN(tFromLS) ? 1.2 : tFromLS;
-      }
-      if (temp < 0) temp = 0;
-      if (temp > 2) temp = 2;
-      return temp;
-    })(),
+    temperature: opts.temperature ?? 0.7,
     max_tokens: opts.max_tokens ?? 512
   };
   const res = await fetch(url, {

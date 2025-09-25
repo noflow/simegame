@@ -3,7 +3,6 @@ export const ROUTER_BUILD = 'v3.0-training';
 import { getPack, matchTopic, sample } from './training.js';
 import { generateLocal } from './generator.local.js';
 import { generateLLM } from './bridge.js';
-import { llmChat } from './adapter.js';
 
 function normalizePlaceName(name){
   if (!name) return 'City';
