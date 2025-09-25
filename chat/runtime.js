@@ -218,9 +218,6 @@ function getRespond(){
     return RouterV2.respondToV2(text, ctx);
   });
 }
-);
-}
-
 
 // --- Sender ---
 function sendCurrentMessage(){
