@@ -213,11 +213,8 @@ function __detectTimeOfDay(){
 }
 // --- Router loader ---
 let __routerPromise = null;
-function getRespond(){ return Promise.resolve(function(text, ctx){ return RouterV2.respondToV2(text, ctx); }); });
+function getRespond(){ return Promise.resolve(function(text, ctx){ return RouterV2.respondToV2(text, ctx); }); 
 }
-);
-}
-
 
 // --- Sender ---
 function sendCurrentMessage(){
