@@ -211,14 +211,13 @@ function __detectTimeOfDay(){
     return ['morning','afternoon','evening','night'][idx] || 'day';
   }catch(e){ return 'day'; }
 }
+
 // --- Router loader ---
 let __routerPromise = null;
 function getRespond(){
   return Promise.resolve(function(text, ctx){
     return RouterV2.respondToV2(text, ctx);
   });
-}
-);
 }
 
 
