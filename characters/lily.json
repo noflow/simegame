@@ -87,14 +87,8 @@
   "chat_behavior": {
     "intro_required": true,
     "minTalkLevel": 15,
-    "busyLines": [
-      "Can this wait? I’ve got a deadline.",
-      "Ugh—study crunch. Later?"
-    ],
-    "smallTalkLines": [
-      "You look beat—want a snack?",
-      "We should hit the city this weekend."
-    ]
+    "busyLines": [],
+    "smallTalkLines": []
   },
   "greetings": {
     "home": "Yo, you seen my headphones?",

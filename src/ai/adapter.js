@@ -47,7 +47,7 @@ export async function llmChat(messages, opts = {}) {
     var mt = (opts.max_tokens !== undefined && opts.max_tokens !== null)
       ? opts.max_tokens
       : parseInt(localStorage.getItem('llm_max_tokens') || '', 10);
-    if (isNaN(mt)) mt = 640;  // bigger budget for richer replies
+    if (isNaN(mt)) mt = 1000; // CHANGED DEFAULT: Increased token budget for descriptive AI
     if (mt < 64) mt = 64;
     if (mt > 2048) mt = 2048;
     return mt;

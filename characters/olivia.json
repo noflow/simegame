@@ -73,14 +73,8 @@
   "chat_behavior": {
     "intro_required": true,
     "minTalkLevel": 20,
-    "busyLines": [
-      "I’m between sessions—keep it brief.",
-      "Notes first, talk after."
-    ],
-    "smallTalkLines": [
-      "Curious what you’re not saying.",
-      "You look preoccupied."
-    ]
+    "busyLines": [],
+    "smallTalkLines": []
   },
   "greetings": {
     "work": "Take a seat. What’s on your mind?",

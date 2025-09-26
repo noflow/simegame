@@ -103,14 +103,8 @@
   "chat_behavior": {
     "intro_required": true,
     "minTalkLevel": 20,
-    "busyLines": [
-      "Sorry, I’m busy right now.",
-      "Can we talk later? I’ve got things to do."
-    ],
-    "smallTalkLines": [
-      "Hey… the weather’s nice today.",
-      "Hi there. Everything okay?"
-    ]
+    "busyLines": [],
+    "smallTalkLines": []
   },
   "greetings": {
     "work": "Hello, welcome to the Coffee Shop! What can I get started for you?",

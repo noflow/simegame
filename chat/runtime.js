@@ -1,9 +1,8 @@
-
 import * as __StateMod from '../src/state.js';
 import * as RouterV2 from '../src/ai/router.v2.js';
-try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
+try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){};
 // runtime.js (clean rewrite) — v35
-try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){}
+try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){};
 
 // Minimal, self-contained chat runtime with IndexedDB history, modal UI, and router.v2 integration.
 
@@ -63,7 +62,7 @@ const RelStore = (function(){
     async set(id,rel){ cache[id]=rel; try{ await set(id,rel); }catch(e){ console.warn('RelStore.set failed',e) } }
   }
 })();
-try { window.RelBC = new BroadcastChannel('simegame_chat'); window.RelBC.onmessage = (ev)=>{ const d=ev&&ev.data||{}; if(d.type==='rel:update' && d.id===window.currentNpcId) { RelStore.preload(d.id).then(()=>renderChat()); } }; } catch(_e){}
+try { window.RelBC = new BroadcastChannel('simegame_chat'); window.RelBC.onmessage = (ev)=>{ const d=ev&&ev.data||{}; if(d.type==='rel:update' && d.id===window.currentNpcId) { RelStore.preload(d.id).then(()=>renderChat()); } }; } catch(_e){};
 
 // --- Modal UI ---
 function ensureModal(){
@@ -157,9 +156,6 @@ window.renderChat = renderChat;
 
 
 
-
-
-
 function __detectPlayer(){
   try{
     let p = (window.GameState && window.GameState.state && window.GameState.state.player) || window.Player || {};
@@ -243,42 +239,11 @@ function sendCurrentMessage(){
   return fn(textVal, ctx);
     }).then(async reply => {
       reply = String(reply || '');
-// blocked contains filter (client-side)
-try{
-  const blocked = [
-    "you have good timing",
-    "i’m on a deadline—walk with me",
-    "i'm on a deadline—walk with me",
-    "you look beat—want a snack",
-    "ugh—study crunch. later", "can this wait? i’ve got a deadline", "can this wait? i've got a deadline", "you again—interesting"
-  ];
-  const low = reply.toLowerCase();
-  for (let i=0;i<blocked.length;i++){
-    if (low.indexOf(blocked[i]) !== -1){
-      reply = "Alright—fill me in. What’s up?";
-      break;
-    }
-  }
-}catch(_e){} // blocked contains filter
-
-// strip canned template replies
-try{
-  var _canned = [
-    "You look beat—want a snack?",
-    "Can this wait? I’ve got a deadline.",
-    "Can this wait? I've got a deadline.",
-    "Ugh—study crunch. Later?"
-  ];
-  if (_canned.indexOf(reply.trim()) !== -1){
-    reply = "Sorry—what do you need right now?";
-  }
-}catch(_e){}
-// strip generic busy/swamped parentheticals the model might emit
-try{
-  reply = reply.replace(/\((?:i['’]?m|im)\s+(?:a\s+bit\s+)?swamped\.?\)/ig, '');
-  reply = reply.replace(/\((?:i['’]?m|im)\s+busy\.?\)/ig, '');
-  reply = reply.replace(/\s{2,}/g, ' ').trim();
-}catch(_e){}
+// START COMMENT OUT: Client-side reply filtering/stripping logic removed for full AI experience
+/*
+... filtering blocks intentionally removed ...
+*/
+// END COMMENT OUT: Client-side reply filtering/stripping logic removed for full AI experience
       const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
       RelStore.set(id, r2).then(()=> renderChat());
     }).catch(err=>{
@@ -340,7 +305,7 @@ if (typeof window.appendMsgToLog !== 'function'){
   };
 }
 
-try{ window.GameUI = window.GameUI || {}; window.GameUI.closeChatModal = closeChatModal; }catch(_e){}
+try{ window.GameUI = window.GameUI || {}; window.GameUI.closeChatModal = closeChatModal; }catch(_e){}{}
 
 // Dev overlay to confirm LLM path (enable with localStorage.debug_ai='1')
 try{

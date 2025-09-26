@@ -98,14 +98,8 @@
   "chat_behavior": {
     "intro_required": true,
     "minTalkLevel": 10,
-    "busyLines": [
-      "I’m grading right now—give me a little bit?",
-      "Dinner’s almost ready; can we chat after?"
-    ],
-    "smallTalkLines": [
-      "How was your day?",
-      "Don’t forget to eat something!"
-    ]
+    "busyLines": [],
+    "smallTalkLines": []
   },
   "greetings": {
     "home": "Hey, sweetie. Need anything?",

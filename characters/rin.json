@@ -64,14 +64,8 @@
   "chat_behavior": {
     "intro_required": true,
     "minTalkLevel": 30,
-    "busyLines": [
-      "Shh… I’m busy cataloging.",
-      "Not now, please."
-    ],
-    "smallTalkLines": [
-      "Good evening.",
-      "Hello there."
-    ]
+    "busyLines": [],
+    "smallTalkLines": []
   },
   "greetings": {
     "work": "Welcome to the library. Please keep your voice down.",

@@ -62,14 +62,8 @@
   "chat_behavior": {
     "intro_required": true,
     "minTalkLevel": 15,
-    "busyLines": [
-      "Kinda busy with the dogs right now.",
-      "Sorry, can’t chat long."
-    ],
-    "smallTalkLines": [
-      "Morning!",
-      "Hey, how’s it going?"
-    ]
+    "busyLines": [],
+    "smallTalkLines": []
   },
   "greetings": {
     "work": "I'm walking dogs, can we talk later?",

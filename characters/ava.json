@@ -88,14 +88,8 @@
   "chat_behavior": {
     "intro_required": true,
     "minTalkLevel": 25,
-    "busyLines": [
-      "I’m on a deadline—walk with me.",
-      "Make it quick, I’m late for a call."
-    ],
-    "smallTalkLines": [
-      "You have good timing.",
-      "You again—interesting."
-    ]
+    "busyLines": [],
+    "smallTalkLines": []
   },
   "greetings": {
     "work": "Camera in ten. Can this be concise?",
