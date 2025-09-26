@@ -1,14 +1,14 @@
 import * as __StateMod from '../src/state.js';
 import * as RouterV2 from '../src/ai/router.v2.js';
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){};
-// runtime.js (clean rewrite) — v36
+// runtime.js (clean rewrite) — v37
 try{ if (!window.GameState) window.GameState = __StateMod; }catch(_e){};
 
 // --- Globals & helpers ---
 try { if (typeof window.currentNpcId === 'undefined') window.currentNpcId = null; } catch(_e){}
 function escapeHtml(s){
   s = String(s == null ? '' : s);
-  return s.replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; });
+  return s.replace(/[&<>\"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'})[c]; });
 }
 function getLastUserUtterance(rel){
   const h = rel && rel.history || [];
@@ -20,7 +20,7 @@ function getLastUserUtterance(rel){
   return '';
 }
 
-// Debug overlay (unchanged)
+// Debug overlay
 (function(){
   try {
     let enabled = true;
@@ -44,7 +44,7 @@ function getLastUserUtterance(rel){
       if (pre) pre.textContent = (pre.textContent + (pre.textContent ? "\n":"") + s).slice(-8000);
     }
     window.ChatDebug = { log: logLine, enable: ()=>{enabled=true; logLine("debug on")}, disable: ()=>{enabled=false; logLine("debug off")} };
-    logLine("Chat runtime loaded", {build:"v36"});
+    logLine("Chat runtime loaded", {build:"v37"});
   } catch(e){}
 })();
 
@@ -71,7 +71,7 @@ const RelStore = (function(){
 })();
 try { window.RelBC = new BroadcastChannel('simegame_chat'); window.RelBC.onmessage = (ev)=>{ const d=ev&&ev.data||{}; if(d.type==='rel:update' && d.id===window.currentNpcId) { RelStore.preload(d.id).then(()=>renderChat()); } }; } catch(_e){};
 
-// Modal UI (unchanged)
+// Modal UI
 function ensureModal(){
   let modal = document.getElementById('chatModal');
   if (!modal){
@@ -119,23 +119,7 @@ function ensureModal(){
   return modal;
 }
 
-function openChatModal(){
-  const modal = ensureModal();
-  modal.removeAttribute('aria-hidden'); try{ modal.removeAttribute('inert'); }catch(_){}
-  const wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='flex';
-  try{ modal.querySelector('#chatInput').focus(); }catch(_){}
-}
-
-function closeChatModal(){
-  const modal = document.getElementById('chatModal'); if (!modal) return;
-  const wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='none';
-  try{ if (document.activeElement) document.activeElement.blur(); }catch(_){}
-  try{ document.body && document.body.focus && document.body.focus(); }catch(_){}
-  try{ modal.setAttribute('inert',''); }catch(_){}
-  modal.setAttribute('aria-hidden','true');
-}
-
-// --- Render ---
+// Render
 function renderChat(){
   try{
     const modal = document.getElementById('chatModal'); if (!modal) return;
@@ -152,20 +136,34 @@ function renderChat(){
       html += '<div class="msg '+cls+'"><strong>'+escapeHtml(who)+':</strong> '+body+'</div>';
     }
     log.innerHTML = html;
-    try{
-      log.scrollTop = log.scrollHeight;
-      requestAnimationFrame(()=>{ try{ log.scrollTop = log.scrollHeight; }catch(_e){} });
-      requestAnimationFrame(()=>{ try{ log.scrollTop = log.scrollHeight; }catch(_e){} });
-    }catch(_e){}
+    try{ log.scrollTop = log.scrollHeight; requestAnimationFrame(()=>{ try{ log.scrollTop = log.scrollHeight; }catch(_e){} }); }catch(_e){}
   }catch(e){ console.warn('renderChat failed', e); }
 }
 window.renderChat = renderChat;
+
+function openChatModal(){
+  const modal = ensureModal();
+  modal.removeAttribute('aria-hidden'); try{ modal.removeAttribute('inert'); }catch(_){}
+  const wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='flex';
+  try{ modal.querySelector('#chatInput').focus(); }catch(_){}
+  // Ensure we render immediately on open
+  try{ renderChat(); }catch(_){}
+}
+
+function closeChatModal(){
+  const modal = document.getElementById('chatModal'); if (!modal) return;
+  const wrap = modal.querySelector('.cosmosrp'); if (wrap) wrap.style.display='none';
+  try{ if (document.activeElement) document.activeElement.blur(); }catch(_){}
+  try{ document.body && document.body.focus && document.body.focus(); }catch(_){}
+  try{ modal.setAttribute('inert',''); }catch(_){}
+  modal.setAttribute('aria-hidden','true');
+}
 
 // --- Router loader ---
 let __routerPromise = null;
 function getRespond(){ return Promise.resolve(function(text, ctx){ return RouterV2.respondToV2(text, ctx); }); }
 
-// --- Sender ---
+// Sender
 function sendCurrentMessage(){
   try{
     const modal = ensureModal();
@@ -193,67 +191,45 @@ function sendCurrentMessage(){
     }).then(async reply => {
       reply = String(reply || '');
 
-// 1) Sanitize: remove "busy/swamped" and kill two known clichés
-try {
-  reply = reply
-    .replace(/\((?:i['’]?m|im)\s+(?:a\s+bit\s+)?swamped\.?\)/ig, '')
-    .replace(/\((?:i['’]?m|im)\s+busy\.?\)/ig, '')
-    .trim();
-  const canned = new Set([
-    "You look beat—want a snack?",
-    "We should hit the city this weekend.",
-    "Can we talk later? I’ve got things to do.",
-    "Can we talk later? I've got things to do.",
-    "Sorry, I’m busy right now.",
-    "Sorry, I'm busy right now."
-  ]);
-  if (canned.has(reply.trim())) reply = "Alright—what’s on your mind?";
-} catch(_e){}
+      // sanitize + enrich
+      try{
+        reply = reply
+          .replace(/\((?:i['’]?m|im)\s+(?:a\s+bit\s+)?swamped\.?\)/ig, '')
+          .replace(/\((?:i['’]?m|im)\s+busy\.?\)/ig, '')
+          .trim();
+        const canned = new Set([
+          "You look beat—want a snack?",
+          "We should hit the city this weekend.",
+          "Can we talk later? I’ve got things to do.",
+          "Can we talk later? I've got things to do.",
+          "Sorry, I’m busy right now.",
+          "Sorry, I'm busy right now."
+        ]);
+        if (canned.has(reply.trim())) reply = "Alright—what’s on your mind?";
+      }catch(_e){}
 
-// 2) Enrich: if too short or generic, expand with context + a follow-up question
-try {
-  const id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
-  const relNow = (window.RelStore && window.RelStore.getSync) ? window.RelStore.getSync(id) : { history: [], friendship:0, romance:0 };
-  const lastUser = getLastUserUtterance(relNow);
-  const npcName = (window.ActiveNPC && window.ActiveNPC.name) || 'I';
-  const loc = (function(){
-    try{
-      const st = (window.GameState && window.GameState.state) || {};
-      return st.location || 'the city';
-    }catch(_e){ return 'the city'; }
-  })();
-  const tod = (function(){
-    try{
-      const st = (window.GameState && window.GameState.state) || {};
-      const idx = st.timeIndex || 0;
-      return ['morning','afternoon','evening','night'][idx] || 'day';
-    }catch(_e){ return 'day'; }
-  })();
-
-  const tooShort = reply.split(/\s+/).length < 10;
-  const generic = /^(hi|hello|hey|okay|alright)[\.\!\?]?$|^everything\s+okay\??$/i.test(reply.trim());
-
-  if (tooShort || generic) {
-    let hook = '';
-    if (/where\s+are\s+you/i.test(lastUser)) hook = `I'm at ${loc}.`;
-    else if (/what\s+are\s+you\s+doing/i.test(lastUser)) hook = `I'm just catching my breath this ${tod}.`;
-    else if (/my\s+name\s+is\s+([a-z0-9_ -]+)/i.test(lastUser)) {
-      const m = lastUser.match(/my\s+name\s+is\s+([a-z0-9_ -]+)/i);
-      hook = `Nice to meet you, ${m && m[1] ? m[1].trim() : 'there'}.`;
-    }
-
-    const follow = (function(){
-      if (/where\s+are\s+you/i.test(lastUser)) return "Want me to meet you somewhere, or are you heading over?";
-      if (/what\s+are\s+you\s+doing/i.test(lastUser)) return "Do you want to hang for a bit, or did you have something in mind?";
-      if (/my\s+name\s+is/i.test(lastUser)) return "What should I call you for short—and what’s the plan right now?";
-      return "What are you up to—and what do you want to do next?";
-    })();
-
-    reply = `${hook ? hook + " " : ""}${reply.replace(/^(hi|hello|hey)/i, npcName + ": hey")}`.trim();
-    if (reply && !/[.!?]$/.test(reply)) reply += ".";
-    reply += " " + follow;
-  }
-} catch(_e){}
+      try{
+        const id2 = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
+        const relNow = (window.RelStore && window.RelStore.getSync) ? window.RelStore.getSync(id2) : { history: [], friendship:0, romance:0 };
+        const lastUser = getLastUserUtterance(relNow);
+        const tooShort = reply.split(/\s+/).length < 10 || /^(hi|hello|hey|okay|alright)[\.\!\?]?$/i.test(reply.trim());
+        if (tooShort){
+          let hook = '';
+          if (/where\s+are\s+you/i.test(lastUser)) hook = `I'm at the city.`;
+          else if (/what\s+are\s+you\s+doing/i.test(lastUser)) hook = `I'm just catching my breath.`;
+          else if (/my\s+name\s+is\s+([a-z0-9_ -]+)/i.test(lastUser)) {
+            const m = lastUser.match(/my\s+name\s+is\s+([a-z0-9_ -]+)/i);
+            hook = `Nice to meet you, ${m && m[1] ? m[1].trim() : 'there'}.`;
+          }
+          const follow = (/where\s+are\s+you/i.test(lastUser)) ? "Want me to meet you somewhere?" :
+                         (/what\s+are\s+you\s+doing/i.test(lastUser)) ? "Do you want to hang for a bit, or did you have something in mind?" :
+                         (/my\s+name\s+is/i.test(lastUser)) ? "What should I call you for short—and what’s the plan right now?" :
+                         "What are you up to—and what do you want to do next?";
+          reply = `${hook ? hook + " " : ""}${reply}`.trim();
+          if (reply && !/[.!?]$/.test(reply)) reply += ".";
+          reply += " " + follow;
+        }
+      }catch(_e){}
 
       const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
       RelStore.set(id, r2).then(()=> renderChat());
@@ -265,7 +241,7 @@ try {
 }
 window.sendCurrentMessage = sendCurrentMessage;
 
-// --- Start chat --- (unchanged aside from version)
+// Start chat
 function startChat(npcOrId){
   try{
     let npc = null;
@@ -274,24 +250,35 @@ function startChat(npcOrId){
     if (npc && npc.id) { window.currentNpcId = npc.id; window.ActiveNPC = npc; }
     if (!window.currentNpcId) window.currentNpcId = 'lily';
     const id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId);
-    RelStore.preload(id).then(()=>{
-      const r = RelStore.getSync(id);
-      if (!r.history || !r.history.length){
-        const g = npc && npc.greetings ? (npc.greetings.home || npc.greetings.casual) : null;
-        if (g){ r.history = r.history || []; r.history.push({speaker: npc && npc.name || 'NPC', text:g}); RelStore.set(id, r); }
-      }
-      renderChat();
-    });
+
+    // Open modal first so UI exists, then bind listeners
     openChatModal();
+
     const modal = ensureModal();
     const form = modal.querySelector('#chatForm');
     const sendBtn = modal.querySelector('#sendBtn');
+    const input = modal.querySelector('#chatInput');
     const closeBtn = modal.querySelector('#chatClose');
     const clearBtn = modal.querySelector('#chatClear');
     if (form && !form.__bound){ form.__bound = true; form.addEventListener('submit', function(e){ e.preventDefault(); sendCurrentMessage(); }); }
+    if (input && !input.__bound){ input.__bound = true; input.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendCurrentMessage(); } }); }
     if (sendBtn && !sendBtn.__bound){ sendBtn.__bound = true; sendBtn.addEventListener('click', function(e){ e.preventDefault(); sendCurrentMessage(); }); }
     if (closeBtn && !closeBtn.__bound){ closeBtn.__bound = true; closeBtn.addEventListener('click', function(e){ e.preventDefault(); closeChatModal(); }); }
     if (clearBtn && !clearBtn.__bound){ clearBtn.__bound = true; clearBtn.addEventListener('click', function(e){ e.preventDefault(); const rid = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId); RelStore.set(rid, {id:rid, history:[], friendship:0, romance:0}).then(()=>renderChat()); }); }
+
+    // Preload & ensure a fallback greeting on first open
+    RelStore.preload(id).then(()=>{
+      const r = RelStore.getSync(id);
+      if (!r.history || !r.history.length){
+        let g = (npc && npc.greetings) ? (npc.greetings.home || npc.greetings.casual) : null;
+        if (!g) g = "She glances over with a quick smile. “Hey—good timing. What’s up?”";
+        r.history = r.history || []; r.history.push({speaker: npc && npc.name || 'NPC', text:g, ts:Date.now()});
+        RelStore.set(id, r);
+      }
+      renderChat();
+    });
+
+    // Backdrop click to close
     const wrap = modal.querySelector('.cosmosrp');
     if (wrap && !wrap.__bound){
       wrap.__bound = true;
@@ -302,7 +289,6 @@ function startChat(npcOrId){
 window.startChat = startChat;
 window.GameUI = window.GameUI || {}; window.GameUI.startChat = startChat;
 
-// Back-compat helper
 if (typeof window.appendMsgToLog !== 'function'){
   window.appendMsgToLog = function(who, text){
     try{
