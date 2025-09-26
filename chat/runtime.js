@@ -154,59 +154,6 @@ function renderChat(){
 }
 window.renderChat = renderChat;
 
-
-
-function __detectPlayer(){
-  try{
-    let p = (window.GameState && window.GameState.state && window.GameState.state.player) || window.Player || {};
-    if (!p || typeof p !== 'object') p = {};
-    try{
-      const raw = localStorage.getItem('game_state_v1');
-      if ((!p.gender || !p.name) && raw){
-        const s = JSON.parse(raw);
-        if (s && s.player){ p = Object.assign({}, p, s.player); }
-      }
-    }catch(_e){}
-    if (p.gender){
-      const g = String(p.gender).toLowerCase();
-      if (g==='transgender' || g==='trans female' || g==='transgender female' || g==='transfemale') p.gender = 'transgender female';
-      else if (/^m(ale)?$/.test(g)) p.gender = 'male';
-      else if (/^f(emale)?$/.test(g)) p.gender = 'female';
-    }
-    if (!p.id) p.id = 'MC';
-    if (!p.name) p.name = 'You';
-    return p;
-  }catch(e){ return { id:'MC', name:'You' }; }
-}
-function __detectLocation(){
-  try{
-    try{
-      const mod = (window.GameState || __StateMod);
-      if (mod && mod.state && mod.state.location) return String(mod.state.location);
-    }catch(_e){}
-    const st = (window.GameState && window.GameState.state) || {};
-    let loc = st.location || (window.GameWorld && window.GameWorld.location) || (window.world && window.world.location);
-    if (!loc){
-      const el = document.querySelector('[data-current-location]') || document.querySelector('[data-location].active') || document.getElementById('locationDesc');
-      if (el){
-        const attr = el.getAttribute('data-current-location') || el.getAttribute('data-location') || '';
-        const txt = (el.textContent || '').trim();
-        loc = attr || (txt.split('\n')[0].trim());
-      }
-    }
-    if (!loc) loc = 'City';
-    return String(loc);
-  }catch(e){ return 'City'; }
-}
-
-
-function __detectTimeOfDay(){
-  try{
-    const st = (window.GameState && window.GameState.state) || (typeof __StateMod !== 'undefined' && __StateMod.state) || {};
-    const idx = st.timeIndex || 0;
-    return ['morning','afternoon','evening','night'][idx] || 'day';
-  }catch(e){ return 'day'; }
-}
 // --- Router loader ---
 let __routerPromise = null;
 function getRespond(){ return Promise.resolve(function(text, ctx){ return RouterV2.respondToV2(text, ctx); }); 
@@ -236,7 +183,7 @@ function sendCurrentMessage(){
         player: (window.Player || { id: 'MC', name: 'You' })
       };
       if (localStorage.getItem('debug_ai')==='1'){ try{ console.log('[AI] using RouterV2.respondToV2'); }catch(_e){} }
-  return fn(textVal, ctx);
+      return fn(textVal, ctx);
     }).then(async reply => {
       reply = String(reply || '');
 // START COMMENT OUT: Client-side reply filtering/stripping logic removed for full AI experience
@@ -244,6 +191,39 @@ function sendCurrentMessage(){
 ... filtering blocks intentionally removed ...
 */
 // END COMMENT OUT: Client-side reply filtering/stripping logic removed for full AI experience
+
+// Strip the busy/swamped parenthetical and replace two known canned lines.
+try {
+  reply = reply
+    .replace(/\((?:i['’]?m|im)\s+(?:a\s+bit\s+)?swamped\.?\)/ig, '')
+    .replace(/\((?:i['’]?m|im)\s+busy\.?\)/ig, '')
+    .trim();
+
+  const canned = new Set([
+    "You look beat—want a snack?",
+    "We should hit the city this weekend."
+  ]);
+  if (canned.has(reply.trim())) {
+    reply = "Alright—what’s on your mind?";
+  }
+
+  // If the last NPC line equals this one, avoid repeats.
+  (function preventRepeat(){
+    const id = (typeof window.currentNpcId==='object' ? window.currentNpcId && window.currentNpcId.id : window.currentNpcId) || (window.ActiveNPC && window.ActiveNPC.id) || 'lily';
+    const r = (window.RelStore && window.RelStore.getSync) ? window.RelStore.getSync(id) : null;
+    const h = r && r.history || [];
+    for (let i=h.length-1;i>=0;i--){
+      const m = h[i];
+      if (m && m.speaker !== 'You' && typeof m.text === 'string') {
+        if (m.text.trim().toLowerCase() === reply.trim().toLowerCase()) {
+          reply = "Okay—tell me what you need and I’ll focus.";
+        }
+        break;
+      }
+    }
+  })();
+} catch(_e){}
+
       const r2 = RelStore.getSync(id); r2.history = r2.history || []; r2.history.push({speaker: npc && npc.name || 'NPC', text:String(reply), ts:Date.now()});
       RelStore.set(id, r2).then(()=> renderChat());
     }).catch(err=>{
