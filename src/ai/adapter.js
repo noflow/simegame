@@ -12,7 +12,7 @@ export async function llmChat(messages, opts = {}) {
     var temp = opts.temperature;
     if (temp === undefined || temp === null) {
       var tLS = parseFloat(localStorage.getItem('llm_temperature'));
-      temp = isNaN(tLS) ? 1.2 : tLS;
+      temp = isNaN(tLS) ? 1.25 : tLS; // slightly higher for variety
     }
     if (temp < 0) temp = 0;
     if (temp > 2) temp = 2;
@@ -23,7 +23,7 @@ export async function llmChat(messages, opts = {}) {
     var v = (opts.top_p !== undefined && opts.top_p !== null)
       ? opts.top_p
       : parseFloat(localStorage.getItem('llm_top_p'));
-    if (isNaN(v)) v = 0.95;
+    if (isNaN(v)) v = 0.98; // allow wider sampling for richer replies
     if (v < 0) v = 0;
     if (v > 1) v = 1;
     return v;
@@ -33,14 +33,14 @@ export async function llmChat(messages, opts = {}) {
     var v = (opts.presence_penalty !== undefined && opts.presence_penalty !== null)
       ? opts.presence_penalty
       : parseFloat(localStorage.getItem('llm_presence_penalty'));
-    return isNaN(v) ? 0.8 : v;
+    return isNaN(v) ? 0.3 : v; // lower penalty to avoid terse avoidance
   })();
 
   var frequency_penalty = (function () {
     var v = (opts.frequency_penalty !== undefined && opts.frequency_penalty !== null)
       ? opts.frequency_penalty
       : parseFloat(localStorage.getItem('llm_frequency_penalty'));
-    return isNaN(v) ? 0.5 : v;
+    return isNaN(v) ? 0.2 : v; // keep repetition under control but gentle
   })();
 
   var max_tokens = (function () {
